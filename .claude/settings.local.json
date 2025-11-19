@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(.specify/scripts/bash/update-agent-context.sh:*)",
+      "Bash(.specify/scripts/bash/check-prerequisites.sh:*)",
+      "Bash(if [ -d \"specs/001-golf-narration/checklists\" ])",
+      "Bash(then ls -la specs/001-golf-narration/checklists/)",
+      "Bash(else echo \"No checklists directory\")",
+      "Bash(fi)",
+      "Bash(git rev-parse:*)",
+      "Bash(if [ -f \".gitignore\" ])",
+      "Bash(then echo \"EXISTS\")",
+      "Bash(else echo \"NOT_FOUND\")",
+      "Bash(python validate.py:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

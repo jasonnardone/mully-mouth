@@ -1,0 +1,39 @@
+# Mully Mouth Configuration Template
+# Copy this file to config.yaml and fill in your API keys
+
+anthropic:
+  api_key: ${ANTHROPIC_API_KEY}  # Set via environment variable or replace directly
+
+elevenlabs:
+  api_key: ${ELEVENLABS_API_KEY}  # Set via environment variable or replace directly
+  voice_id: "Antoni"  # Default neutral voice (options: Antoni, Rachel, etc.)
+
+personality: "neutral"  # Options: neutral, encouraging, sarcastic
+
+hotkeys:
+  toggle: "f10"       # Toggle commentary on/off
+  correct: "ctrl+c"   # Correction mode
+
+monitoring:
+  fps: 2                      # Screen capture frames per second
+  motion_threshold: 0.02      # Pixel change ratio (0.0-1.0)
+  ball_stop_duration: 1.0     # Seconds of stillness before shot complete
+
+ai:
+  model: "claude-3-5-sonnet-20241022"
+  max_tokens: 150
+  temperature: 0.7
+  target_image_size: [1280, 720]  # Resize before API call
+
+cache:
+  confidence_threshold: 0.85  # Use cache if confidence above this
+  hamming_distance_max: 10    # Perceptual hash similarity threshold
+  persist_interval: 10        # Auto-save every N additions
+
+cost:
+  budget_per_round: 0.05      # USD - halt if approaching this limit
+  warn_at_percentage: 0.80    # Warn when 80% of budget used
+
+logging:
+  level: "INFO"               # DEBUG, INFO, WARN, ERROR
+  file: "logs/mully-mouth.log"
