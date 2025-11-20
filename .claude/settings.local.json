@@ -14,7 +14,8 @@
       "Bash(python validate.py:*)",
       "Bash(git commit:*)",
       "Bash(git checkout:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(mkdir:*)"
     ],
     "deny": [],
     "ask": []

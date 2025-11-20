@@ -7,6 +7,9 @@ anthropic:
 elevenlabs:
   api_key: ${ELEVENLABS_API_KEY}  # Set via environment variable or replace directly
   voice_id: "Antoni"  # Default neutral voice (options: Antoni, Rachel, etc.)
+  model: "eleven_turbo_v2_5"  # Turbo model (available on free tier)
+  stability: 0.5
+  similarity_boost: 0.75
 
 personality: "neutral"  # Options: neutral, encouraging, sarcastic
 
@@ -20,7 +23,7 @@ monitoring:
   ball_stop_duration: 1.0     # Seconds of stillness before shot complete
 
 ai:
-  model: "claude-3-5-sonnet-20241022"
+  model: "claude-sonnet-4-5"
   max_tokens: 150
   temperature: 0.7
   target_image_size: [1280, 720]  # Resize before API call

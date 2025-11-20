@@ -2,8 +2,9 @@
 import threading
 from typing import Optional
 
-from elevenlabs import VoiceSettings, save, stream
+from elevenlabs import VoiceSettings, save
 from elevenlabs.client import ElevenLabs
+from elevenlabs.play import play
 
 from src.lib.exceptions import VoiceServiceError
 
@@ -19,7 +20,7 @@ class VoiceService:
         self,
         api_key: str,
         voice_id: str = "21m00Tcm4TlvDq8ikWAM",  # Default: Rachel voice
-        model: str = "eleven_monolingual_v1",
+        model: str = "eleven_turbo_v2_5",  # Turbo v2.5 (free tier compatible)
         stability: float = 0.5,
         similarity_boost: float = 0.75,
     ):
@@ -78,17 +79,16 @@ class VoiceService:
         try:
             self.is_speaking = True
 
-            # Stream audio
-            audio_stream = self.client.generate(
+            # Generate audio
+            audio_data = self.client.text_to_speech.convert(
                 text=text,
-                voice=self.voice_id,
-                model=self.model,
+                voice_id=self.voice_id,
+                model_id=self.model,
                 voice_settings=self.voice_settings,
-                stream=True,
             )
 
-            # Play streamed audio
-            stream(audio_stream)
+            # Play audio using ElevenLabs play function
+            play(audio_data)
 
             self.is_speaking = False
 
@@ -117,10 +117,10 @@ class VoiceService:
             VoiceServiceError: If generation fails
         """
         try:
-            audio = self.client.generate(
+            audio = self.client.text_to_speech.convert(
                 text=text,
-                voice=self.voice_id,
-                model=self.model,
+                voice_id=self.voice_id,
+                model_id=self.model,
                 voice_settings=self.voice_settings,
             )
 
@@ -197,15 +197,15 @@ class VoiceService:
         try:
             self.is_speaking = True
 
-            audio = self.client.generate(
+            audio = self.client.text_to_speech.convert(
                 text=text,
-                voice=self.voice_id,
-                model=self.model,
+                voice_id=self.voice_id,
+                model_id=self.model,
                 voice_settings=self.voice_settings,
             )
 
-            # Play audio using default player
-            stream(audio)
+            # Play audio using ElevenLabs play function
+            play(audio)
 
             self.is_speaking = False
 

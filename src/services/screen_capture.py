@@ -19,7 +19,7 @@ class ScreenCaptureService:
 
     def __init__(self):
         """Initialize screen capture service."""
-        self.sct = mss.mss()
+        self.sct = None  # Will be created in the thread that uses it
         self.window_id: Optional[str] = None
         self.window_rect: Optional[dict] = None
         self.monitoring = False
@@ -30,29 +30,28 @@ class ScreenCaptureService:
 
     def find_gs_pro_window(self) -> Optional[str]:
         """
-        Detect GS Pro window by title pattern.
+        Use primary monitor for capture (fullscreen mode).
 
         Returns:
-            Window title if found, None otherwise
+            Monitor description
         """
         try:
-            # Search for windows containing "GS Pro" (case-insensitive)
-            windows = gw.getAllWindows()
-            for window in windows:
-                if window.title and "gs pro" in window.title.lower():
-                    # Found it
-                    self.window_id = window.title
-                    # Store window rectangle
-                    self.window_rect = {
-                        "left": window.left,
-                        "top": window.top,
-                        "width": window.width,
-                        "height": window.height,
-                    }
-                    return window.title
-            return None
+            # Create MSS instance if not already created
+            if self.sct is None:
+                self.sct = mss.mss()
+
+            # Use primary monitor (monitor 1)
+            monitor = self.sct.monitors[1]  # 0 is all monitors, 1 is primary
+            self.window_rect = {
+                "left": monitor["left"],
+                "top": monitor["top"],
+                "width": monitor["width"],
+                "height": monitor["height"],
+            }
+            self.window_id = "Primary Monitor"
+            return f"Primary Monitor ({monitor['width']}x{monitor['height']})"
         except Exception as e:
-            raise WindowNotFoundError(f"Failed to search for GS Pro window: {e}")
+            raise WindowNotFoundError(f"Failed to access primary monitor: {e}")
 
     def capture_window(self, window_id: Optional[str] = None) -> np.ndarray:
         """
@@ -145,18 +144,35 @@ class ScreenCaptureService:
 
         Captures frames at specified FPS and stores in latest_frame.
         """
+        # Create MSS instance in this thread
+        thread_sct = mss.mss()
         interval = 1.0 / self.fps
 
-        while self.monitoring:
-            try:
-                frame = self.capture_window()
-                with self._lock:
-                    self.latest_frame = frame
-            except Exception as e:
-                # Log error but continue monitoring
-                print(f"Capture error in monitoring loop: {e}")
+        try:
+            while self.monitoring:
+                try:
+                    # Capture using thread-local MSS instance
+                    if not self.window_rect:
+                        print("No window rect set")
+                        time.sleep(interval)
+                        continue
 
-            time.sleep(interval)
+                    screenshot = thread_sct.grab(self.window_rect)
+                    # Convert to RGB numpy array
+                    img = np.array(screenshot)
+                    # MSS returns BGRA, convert to RGB
+                    img_rgb = img[:, :, :3][:, :, ::-1]  # Drop alpha and BGR->RGB
+
+                    with self._lock:
+                        self.latest_frame = img_rgb
+                except Exception as e:
+                    # Log error but continue monitoring
+                    print(f"Capture error in monitoring loop: {e}")
+
+                time.sleep(interval)
+        finally:
+            # Clean up thread-local MSS instance
+            thread_sct.close()
 
     def __del__(self):
         """Cleanup on deletion."""

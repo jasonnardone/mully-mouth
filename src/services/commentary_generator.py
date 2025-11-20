@@ -23,7 +23,7 @@ class CommentaryGeneratorService:
         api_key: str,
         personality_name: str = "neutral",
         personalities_dir: str = "data/personalities",
-        model: str = "claude-3-5-sonnet-20241022",
+        model: str = "claude-sonnet-4-5",
     ):
         """
         Initialize commentary generator.

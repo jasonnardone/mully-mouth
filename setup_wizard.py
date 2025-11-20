@@ -76,7 +76,7 @@ def main() -> int:
 
         use_custom_voice = get_input("Customize voice settings? (y/n)", "n").lower()
 
-        voice_id = "21m00Tcm4TlvDq8ikWAM"  # Default
+        voice_id = "NOpBlnGInO9m6vDvFkFC"  # Default
         stability = "0.5"
         similarity = "0.75"
 
@@ -110,13 +110,13 @@ def main() -> int:
 # Anthropic (Claude AI) Configuration
 anthropic:
   api_key: {anthropic_key}
-  model: claude-3-5-sonnet-20241022
+  model: claude-sonnet-4-5
 
 # ElevenLabs (Voice) Configuration
 elevenlabs:
   api_key: {elevenlabs_key}
   voice_id: {voice_id}
-  model: eleven_monolingual_v1
+  model: eleven_turbo_v2_5
   stability: {stability}
   similarity_boost: {similarity}
 

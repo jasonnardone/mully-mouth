@@ -19,13 +19,13 @@ class AIAnalyzerService:
     vision capabilities with structured output.
     """
 
-    def __init__(self, api_key: str, model: str = "claude-3-5-sonnet-20241022"):
+    def __init__(self, api_key: str, model: str = "claude-sonnet-4-5"):
         """
         Initialize AI analyzer.
 
         Args:
             api_key: Anthropic API key
-            model: Claude model to use (default: claude-3-5-sonnet-20241022)
+            model: Claude model to use (default: claude-sonnet-4-5)
         """
         self.client = anthropic.Anthropic(api_key=api_key)
         self.model = model
@@ -69,7 +69,7 @@ class AIAnalyzerService:
                                 "type": "image",
                                 "source": {
                                     "type": "base64",
-                                    "media_type": "image/png",
+                                    "media_type": "image/jpeg",
                                     "data": image_data,
                                 },
                             },
@@ -199,20 +199,44 @@ Be concise and accurate. Use high confidence (>0.8) only when very certain."""
 
     def _encode_image(self, screenshot: np.ndarray) -> str:
         """
-        Encode screenshot to base64 PNG.
+        Encode screenshot to base64 JPEG with resizing to stay under 5 MB limit.
 
         Args:
             screenshot: RGB numpy array
 
         Returns:
-            Base64-encoded PNG string
+            Base64-encoded JPEG string
         """
         # Convert to PIL Image
         img = Image.fromarray(screenshot.astype("uint8"), "RGB")
 
-        # Encode to PNG
-        buffer = BytesIO()
-        img.save(buffer, format="PNG")
+        # Resize to reasonable dimensions (max 1920x1080)
+        max_width = 1920
+        max_height = 1080
+
+        # Calculate new dimensions maintaining aspect ratio
+        width, height = img.size
+        if width > max_width or height > max_height:
+            ratio = min(max_width / width, max_height / height)
+            new_width = int(width * ratio)
+            new_height = int(height * ratio)
+            img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+        # Encode to JPEG with quality adjustment to stay under 5 MB
+        max_size = 4_800_000  # 4.8 MB to be safe (under 5 MB limit)
+        quality = 85
+
+        while quality > 20:
+            buffer = BytesIO()
+            img.save(buffer, format="JPEG", quality=quality, optimize=True)
+            size = buffer.tell()
+
+            if size <= max_size:
+                break
+
+            # Reduce quality and try again
+            quality -= 10
+
         buffer.seek(0)
 
         # Base64 encode

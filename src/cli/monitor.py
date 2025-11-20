@@ -55,14 +55,15 @@ class Monitor:
             print("Starting Mully Mouth Golf Caddy...")
             print(f"Personality: {self.config.personality}")
 
-            # Find GS Pro window
-            print("\nSearching for GS Pro window...")
-            window_title = self.screen_capture.find_gs_pro_window()
+            # Use primary monitor for capture
+            print("\nUsing primary monitor for capture...")
+            monitor_info = self.screen_capture.find_gs_pro_window()
 
-            if not window_title:
-                raise ServiceError("GS Pro window not found. Is GS Pro running?")
+            if not monitor_info:
+                raise ServiceError("Could not access primary monitor.")
 
-            print(f"Found window: {window_title}")
+            print(f"Capturing: {monitor_info}")
+            print("Make your video fullscreen to capture it.")
 
             # Start screen capture
             fps = self.config.monitoring.fps
