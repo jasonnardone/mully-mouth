@@ -1,4 +1,5 @@
 """CLI monitor for coordinating shot detection and commentary."""
+import random
 import time
 from datetime import datetime
 from typing import Optional
@@ -253,17 +254,23 @@ class Monitor:
                 if confidence >= self.config.cache.min_confidence_to_cache:
                     self.pattern_cache.add_pattern(screenshot, outcome, confidence)
 
-            # Generate commentary
-            print("  Generating commentary...")
-            commentary = self.commentary_generator.generate_commentary(
-                outcome=outcome,
-                confidence=confidence,
-            )
+            # Generate commentary based on frequency setting
+            should_comment = random.random() < self.config.commentary_frequency
+            commentary = None
 
-            print(f"  Commentary: \"{commentary}\"")
+            if should_comment:
+                print("  Generating commentary...")
+                commentary = self.commentary_generator.generate_commentary(
+                    outcome=outcome,
+                    confidence=confidence,
+                )
 
-            # Speak commentary (non-blocking)
-            self.voice_service.speak(commentary, blocking=False)
+                print(f"  Commentary: \"{commentary}\"")
+
+                # Speak commentary (non-blocking)
+                self.voice_service.speak(commentary, blocking=False)
+            else:
+                print(f"  Skipping commentary (frequency: {self.config.commentary_frequency})")
 
             # Create shot event
             screenshot_hash = str(self.pattern_cache._compute_hash(screenshot))
@@ -274,7 +281,7 @@ class Monitor:
                 screenshot_hash=screenshot_hash,
                 detected_outcome=outcome,
                 confidence=confidence,
-                commentary_text=commentary,
+                commentary_text=commentary or "",
                 was_cached=was_cached,
                 api_cost=api_cost,
             )

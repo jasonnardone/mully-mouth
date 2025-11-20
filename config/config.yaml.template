@@ -12,6 +12,7 @@ elevenlabs:
   similarity_boost: 0.75
 
 personality: "neutral"  # Options: neutral, encouraging, sarcastic
+commentary_frequency: 0.7  # Probability of generating commentary (0.0-1.0, 1.0 = always)
 
 hotkeys:
   toggle: "f10"       # Toggle commentary on/off
