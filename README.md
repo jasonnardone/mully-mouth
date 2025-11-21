@@ -4,12 +4,16 @@ AI-powered golf shot narration for GS Pro simulator using Claude Vision and Elev
 
 ## Features
 
+- **Windows System Tray UI**: User-friendly interface with no command line needed
 - **Automatic Shot Detection**: Uses motion detection to identify when shots are complete
 - **AI Shot Analysis**: Claude Vision API analyzes screenshots to determine shot outcomes
+- **Score Achievement Detection**: Recognizes and celebrates Birdies, Eagles, Pars, etc.
+- **Player Name Recognition**: Extracts and mentions player names in commentary
 - **Personality-Driven Commentary**: Multiple commentary personalities (neutral, sarcastic, encouraging)
 - **Voice Narration**: Natural speech synthesis using ElevenLabs
 - **Cost Optimization**: Pattern cache reduces AI API calls by 70-80%
-- **Learning System**: User corrections improve future accuracy
+- **Learning System**: Train AI with custom screenshots for improved accuracy
+- **Adjustable Frequencies**: Control commentary and name mention frequency
 
 ## Quick Start
 
@@ -33,40 +37,49 @@ cd mully-mouth
 pip install -r requirements.txt
 ```
 
-3. Run the setup wizard (recommended):
+3. Configure API keys (choose ONE method):
+
+**Method A: Secure Credential Storage (Recommended)**
+```bash
+python setup_credentials.py
+```
+Your API keys are stored securely in Windows Credential Manager, encrypted by Windows, and never saved in plain text files. Perfect for public GitHub repos!
+
+**Method B: Environment Variables**
+```bash
+# Windows PowerShell
+$env:ANTHROPIC_API_KEY="your-key-here"
+$env:ELEVENLABS_API_KEY="your-key-here"
+
+# Or set permanently in Windows System Environment Variables
+```
+
+**Method C: Config File (Not recommended for public repos)**
+```bash
+cp config/config.yaml.template config/config.yaml
+# Edit config/config.yaml and add your API keys
+```
+
+**Method D: Setup Wizard (Interactive)**
 ```bash
 python setup_wizard.py
 ```
-
-The wizard will guide you through:
-- Entering API keys
-- Choosing a commentary personality
-- Configuring voice settings
-- Adjusting motion detection
-
-**Alternative: Manual Configuration**
-
-Copy the template and edit manually:
-```bash
-cp config/config.yaml.template config/config.yaml
-```
-
-Edit `config/config.yaml` and add your API keys:
-```yaml
-anthropic:
-  api_key: ${ANTHROPIC_API_KEY}
-
-elevenlabs:
-  api_key: ${ELEVENLABS_API_KEY}
-```
-
-Or set environment variables:
-```bash
-export ANTHROPIC_API_KEY="your-key-here"
-export ELEVENLABS_API_KEY="your-key-here"
-```
+The wizard will guide you through all configuration options.
 
 ### Usage
+
+#### Option 1: System Tray (Recommended for Non-Technical Users)
+
+**Double-click `mully-mouth.bat`** to start the system tray application.
+
+- Look for the gray "M" icon in your system tray (bottom-right corner)
+- Right-click the icon and select "Start Monitoring" to begin
+- Change settings, view stats, start/stop monitoring anytime
+- **Starts in stopped mode** - you control when monitoring begins
+
+**See [SYSTEM_TRAY_GUIDE.md](SYSTEM_TRAY_GUIDE.md) for detailed instructions.**
+
+#### Option 2: Command Line
 
 1. Start GS Pro
 

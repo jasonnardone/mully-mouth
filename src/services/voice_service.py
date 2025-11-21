@@ -43,6 +43,7 @@ class VoiceService:
         )
         self.current_thread: Optional[threading.Thread] = None
         self.is_speaking = False
+        self.should_stop = False
 
     def speak(self, text: str, blocking: bool = False) -> bool:
         """
@@ -107,12 +108,13 @@ class VoiceService:
 
     def stop(self) -> None:
         """Stop current speech (if running in background)."""
+        self.should_stop = True
         self.is_speaking = False
 
         if self.current_thread and self.current_thread.is_alive():
-            # Note: Cannot forcefully stop thread, but setting is_speaking flag
-            # will allow graceful termination in next iteration
-            self.current_thread.join(timeout=1.0)
+            # Note: Cannot forcefully stop mpv playback, but we can wait for it
+            # Setting flags to prevent new speech from starting
+            self.current_thread.join(timeout=2.0)
 
     def save_audio(self, text: str, file_path: str) -> None:
         """

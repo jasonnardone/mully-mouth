@@ -51,6 +51,10 @@ data/training/
 data/cache/
 *.log
 
+# Credentials (never commit API keys!)
+run_tray_with_keys.bat
+*_with_keys.bat
+
 # Temporary files
 *.tmp
 *.temp

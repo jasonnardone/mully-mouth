@@ -20,6 +20,8 @@ dependencies = [
     "imagehash>=4.3.0",
     "numpy>=1.24.0",
     "pillow>=10.0.0",
+    "pystray>=0.19.0",
+    "keyring>=24.0.0",
 ]
 
 [project.optional-dependencies]
@@ -32,6 +34,7 @@ dev = [
 
 [project.scripts]
 mully-mouth = "src.cli.main:main"
+mully-mouth-tray = "src.cli.tray_app:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

@@ -93,9 +93,21 @@ class Monitor:
             self.stop()
             raise
 
-    def stop(self) -> None:
-        """Stop monitoring and cleanup."""
+    def stop(self, print_summary: bool = True) -> None:
+        """
+        Stop monitoring and cleanup.
+
+        Args:
+            print_summary: Whether to print session summary (default: True)
+        """
+        if not self.is_running:
+            return
+
         self.is_running = False
+
+        # Stop voice service (interrupt any ongoing speech)
+        if hasattr(self, "voice_service"):
+            self.voice_service.stop()
 
         # Stop screen capture
         if hasattr(self, "screen_capture"):
@@ -106,28 +118,97 @@ class Monitor:
             self.session.end_time = datetime.now()
 
             # Print session stats
-            print("\n" + "=" * 50)
-            print("SESSION SUMMARY")
-            print("=" * 50)
-            print(f"Total shots: {len(self.session.shot_events)}")
-            print(f"API calls: {self.session.total_api_calls}")
-            print(f"Cache hit rate: {self.session.cache_hit_rate * 100:.1f}%")
-            print(f"Total cost: ${self.session.total_cost:.4f}")
-            print(f"Accuracy: {self.session.accuracy_rate * 100:.1f}%")
-            print("=" * 50)
+            if print_summary:
+                print("\n" + "=" * 50)
+                print("SESSION SUMMARY")
+                print("=" * 50)
+                print(f"Total shots: {len(self.session.shot_events)}")
+                print(f"API calls: {self.session.total_api_calls}")
+                print(f"Cache hit rate: {self.session.cache_hit_rate * 100:.1f}%")
+                print(f"Total cost: ${self.session.total_cost:.4f}")
+                print(f"Accuracy: {self.session.accuracy_rate * 100:.1f}%")
+                print("=" * 50)
 
             # Save session
             try:
                 self.session_service.save_session(self.session)
-                print(f"Session saved: {self.session.id}")
+                if print_summary:
+                    print(f"Session saved: {self.session.id}")
             except Exception as e:
-                print(f"Warning: Failed to save session: {e}")
+                if print_summary:
+                    print(f"Warning: Failed to save session: {e}")
 
             # Persist cache
             self.pattern_cache.persist()
-            print("Pattern cache saved.")
+            if print_summary:
+                print("Pattern cache saved.")
 
-        print("\nGoodbye!")
+        if print_summary:
+            print("\nGoodbye!")
+
+    def get_status(self) -> dict:
+        """
+        Get current monitoring status (thread-safe).
+
+        Returns:
+            Dictionary with status information
+        """
+        status = {
+            "is_running": self.is_running,
+            "session_active": self.session is not None,
+            "total_shots": 0,
+            "total_cost": 0.0,
+            "cache_hit_rate": 0.0,
+            "accuracy_rate": 0.0,
+            "total_api_calls": 0,
+            "personality": self.config.personality,
+            "commentary_frequency": self.config.commentary_frequency,
+            "name_frequency": self.config.name_frequency,
+        }
+
+        if self.session:
+            status.update({
+                "total_shots": len(self.session.shot_events),
+                "total_cost": self.session.total_cost,
+                "cache_hit_rate": self.session.cache_hit_rate,
+                "accuracy_rate": self.session.accuracy_rate,
+                "total_api_calls": self.session.total_api_calls,
+            })
+
+        return status
+
+    def start_non_blocking(self) -> None:
+        """
+        Start monitoring in non-blocking mode (for system tray use).
+
+        Raises:
+            ServiceError: If services fail to start
+        """
+        try:
+            # Use primary monitor for capture
+            monitor_info = self.screen_capture.find_gs_pro_window()
+
+            if not monitor_info:
+                raise ServiceError("Could not access primary monitor.")
+
+            # Start screen capture
+            fps = self.config.monitoring.fps
+            self.screen_capture.start_monitoring(fps=fps)
+
+            # Create new session
+            self.session = Session(
+                id=generate_uuid(),
+                start_time=datetime.now(),
+                personality_name=self.config.personality,
+            )
+
+            # Main monitoring loop
+            self.is_running = True
+            self._monitoring_loop()
+
+        except Exception as e:
+            self.stop(print_summary=False)
+            raise
 
     def _init_services(self) -> None:
         """Initialize all required services."""
