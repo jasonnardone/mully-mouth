@@ -287,6 +287,34 @@ class Monitor:
                 if player_name:
                     print(f"  Player: {player_name}")
 
+            # Check for score achievement first (Birdie, Eagle, etc.)
+            achievement = self.ai_analyzer.detect_score_achievement(screenshot)
+            if achievement:
+                print(f"  Achievement detected: {achievement}!")
+
+                # Generate achievement commentary
+                print("  Generating achievement commentary...")
+
+                # Decide whether to include player name based on name_frequency
+                include_name = player_name and (random.random() < self.config.name_frequency)
+                name_to_use = player_name if include_name else None
+
+                commentary = self.commentary_generator.generate_achievement_commentary(
+                    achievement=achievement,
+                    player_name=name_to_use,
+                )
+
+                print(f"  Commentary: \"{commentary}\"")
+
+                # Speak commentary (non-blocking)
+                spoke = self.voice_service.speak(commentary, blocking=False)
+                if not spoke:
+                    print("  (Skipped - previous commentary still playing)")
+
+                # For achievements, we skip the normal shot analysis
+                # and don't save to session since it's a screen overlay, not a shot
+                return
+
             # Check pattern cache first
             cached_result = self.pattern_cache.find_match(screenshot)
 

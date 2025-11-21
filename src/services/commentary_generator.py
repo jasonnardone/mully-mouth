@@ -115,6 +115,80 @@ class CommentaryGeneratorService:
         except Exception as e:
             raise CommentaryError(f"Failed to generate commentary: {e}")
 
+    def generate_achievement_commentary(
+        self,
+        achievement: str,
+        player_name: Optional[str] = None,
+    ) -> str:
+        """
+        Generate commentary for a score achievement (Birdie, Eagle, etc.).
+
+        Args:
+            achievement: Score achievement text (e.g., "Birdie", "Eagle")
+            player_name: Optional player name to include in commentary
+
+        Returns:
+            Commentary text
+
+        Raises:
+            CommentaryError: If generation fails
+        """
+        try:
+            system_prompt = self.personality_config.get("system_prompt", "")
+
+            # Build user prompt for achievement
+            prompt = f"Generate enthusiastic commentary for this golf score achievement:\n\n"
+            prompt += f"ACHIEVEMENT: {achievement}\n"
+
+            if player_name:
+                prompt += f"PLAYER NAME: {player_name}\n"
+                prompt += f"\nInclude the player's name '{player_name}' naturally in the commentary."
+
+            prompt += "\nGenerate a concise (1-2 sentences), personality-appropriate, celebratory commentary that captures the excitement of this achievement."
+
+            # Call Claude API
+            message = self.client.messages.create(
+                model=self.model,
+                max_tokens=150,
+                system=[
+                    {
+                        "type": "text",
+                        "text": system_prompt,
+                        "cache_control": {"type": "ephemeral"}
+                    }
+                ],
+                messages=[
+                    {
+                        "role": "user",
+                        "content": prompt,
+                    }
+                ],
+            )
+
+            # Extract commentary
+            if not message.content:
+                raise CommentaryError("Empty response from Claude API")
+
+            commentary = message.content[0].text.strip()
+
+            # Ensure it's concise (1-2 sentences)
+            sentences = commentary.split(". ")
+            if len(sentences) > 2:
+                commentary = ". ".join(sentences[:2]) + "."
+
+            return commentary
+
+        except anthropic.APIError as e:
+            # Fallback to simple achievement announcement
+            if player_name:
+                return f"{achievement} for {player_name}! Great job!"
+            return f"{achievement}! Nice shot!"
+        except Exception as e:
+            # Fallback to simple achievement announcement
+            if player_name:
+                return f"{achievement} for {player_name}!"
+            return f"{achievement}!"
+
     def get_personality_info(self) -> Dict:
         """
         Get current personality information.

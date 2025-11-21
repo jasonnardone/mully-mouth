@@ -183,6 +183,88 @@ class AIAnalyzerService:
         except Exception as e:
             return None
 
+    def detect_score_achievement(self, screenshot: np.ndarray) -> Optional[str]:
+        """
+        Detect if screenshot shows a score achievement in the center (Birdie, Eagle, Par, Bogey, etc.).
+
+        Args:
+            screenshot: Screenshot to analyze
+
+        Returns:
+            Score achievement text if found (e.g., "Birdie", "Eagle"), None otherwise
+        """
+        try:
+            # Crop center region where score achievements are typically displayed
+            height, width = screenshot.shape[:2]
+            # Center 40% x 40% region
+            center_y = int(height * 0.3)
+            center_x = int(width * 0.3)
+            center_h = int(height * 0.4)
+            center_w = int(width * 0.4)
+
+            center_region = screenshot[center_y:center_y + center_h, center_x:center_x + center_w]
+
+            # Resize to reduce tokens
+            from PIL import Image as PILImage
+            center_img = PILImage.fromarray(center_region.astype("uint8"), "RGB")
+            center_img = center_img.resize((min(600, center_img.width), min(600, center_img.height)), PILImage.Resampling.LANCZOS)
+            center_region = np.array(center_img)
+
+            # Convert to base64
+            image_data = self._encode_image(center_region)
+
+            # Call Claude Vision API to detect score achievement
+            message = self.client.messages.create(
+                model=self.model,
+                max_tokens=30,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image",
+                                "source": {
+                                    "type": "base64",
+                                    "media_type": "image/jpeg",
+                                    "data": image_data,
+                                },
+                            },
+                            {
+                                "type": "text",
+                                "text": "Is there large text in the CENTER of this image showing a golf score achievement like 'Birdie', 'Eagle', 'Par', 'Bogey', 'Double Bogey', 'Albatross', or 'Hole in One'? Reply with ONLY the achievement word if found (e.g., 'Birdie'), or 'NONE' if not found.",
+                            },
+                        ],
+                    }
+                ],
+            )
+
+            # Parse response
+            if not message.content:
+                return None
+
+            achievement = message.content[0].text.strip()
+
+            # Check if achievement was found
+            if achievement.upper() == "NONE" or not achievement:
+                return None
+
+            # Validate it's a known score achievement
+            valid_achievements = [
+                "birdie", "eagle", "par", "bogey", "double bogey",
+                "albatross", "hole in one", "ace", "triple bogey"
+            ]
+
+            achievement_lower = achievement.lower()
+            if any(valid in achievement_lower for valid in valid_achievements):
+                return achievement
+
+            return None
+
+        except anthropic.APIError as e:
+            return None
+        except Exception as e:
+            return None
+
     def estimate_cost(self, screenshot: np.ndarray, few_shot_examples: Optional[list] = None) -> float:
         """
         Estimate API cost for analyzing this screenshot.
