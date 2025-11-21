@@ -79,10 +79,7 @@ class Monitor:
             )
 
             print("\nMonitoring active. Waiting for shots...")
-            print("Commands:")
-            print("  Type 'correct' to correct the last shot")
-            print("  Type 'stats' to show learning statistics")
-            print("  Press Ctrl+C to stop.\n")
+            print("Press Ctrl+C to stop.\n")
 
             # Main monitoring loop
             self.is_running = True
@@ -213,6 +210,63 @@ class Monitor:
                 print(f"Error in monitoring loop: {e}")
                 time.sleep(1.0)
 
+    def _calculate_api_cost(self, raw_response: dict) -> float:
+        """
+        Calculate actual API cost from response usage data.
+
+        Args:
+            raw_response: API response dict with usage info
+
+        Returns:
+            Cost in USD
+        """
+        try:
+            usage = raw_response.get('usage', {})
+            input_tokens = usage.get('input_tokens', 0)
+            output_tokens = usage.get('output_tokens', 0)
+
+            # Claude Sonnet 4.5 pricing (as of Nov 2024):
+            # Input: $3.00 / 1M tokens
+            # Output: $15.00 / 1M tokens
+            # Cache reads: $0.30 / 1M tokens (90% discount)
+            # Cache writes: $3.75 / 1M tokens (25% surcharge)
+
+            cache_read_tokens = usage.get('cache_read_input_tokens', 0)
+            cache_creation_tokens = usage.get('cache_creation_input_tokens', 0)
+
+            # Calculate costs
+            regular_input = input_tokens - cache_read_tokens - cache_creation_tokens
+            input_cost = (regular_input / 1_000_000) * 3.00
+            cache_read_cost = (cache_read_tokens / 1_000_000) * 0.30
+            cache_write_cost = (cache_creation_tokens / 1_000_000) * 3.75
+            output_cost = (output_tokens / 1_000_000) * 15.00
+
+            total_cost = input_cost + cache_read_cost + cache_write_cost + output_cost
+            return total_cost
+
+        except Exception as e:
+            # Fallback to rough estimate if usage data unavailable
+            return 0.005  # ~$0.005 per request as fallback
+
+    def _extract_player_name(self, screenshot: np.ndarray) -> Optional[str]:
+        """
+        Extract player name from upper left corner of screenshot using Claude Vision API.
+
+        Args:
+            screenshot: Full screenshot
+
+        Returns:
+            Player name if found, None otherwise
+        """
+        try:
+            # Use AI analyzer to extract player name
+            player_name = self.ai_analyzer.extract_player_name(screenshot)
+            return player_name
+
+        except Exception as e:
+            # Name extraction failed, continue without name
+            return None
+
     def _process_shot(self, screenshot: np.ndarray) -> None:
         """
         Process detected shot: analyze, generate commentary, speak.
@@ -225,6 +279,13 @@ class Monitor:
             timestamp = datetime.now()
 
             print(f"\n[{timestamp.strftime('%H:%M:%S')}] Shot detected!")
+
+            # Extract player name from screenshot every time (if name_frequency > 0)
+            player_name = None
+            if self.config.name_frequency > 0:
+                player_name = self._extract_player_name(screenshot)
+                if player_name:
+                    print(f"  Player: {player_name}")
 
             # Check pattern cache first
             cached_result = self.pattern_cache.find_match(screenshot)
@@ -245,10 +306,12 @@ class Monitor:
                 )
                 was_cached = False
 
-                # Estimate cost
-                api_cost = self.ai_analyzer.estimate_cost(screenshot)
+                # Calculate actual cost from API response
+                api_cost = self._calculate_api_cost(raw_response)
 
                 print(f"  Outcome: {outcome.value} (confidence: {confidence:.2f})")
+                if api_cost > 0:
+                    print(f"  API cost: ${api_cost:.4f}")
 
                 # Add to cache if high confidence
                 if confidence >= self.config.cache.min_confidence_to_cache:
@@ -260,15 +323,23 @@ class Monitor:
 
             if should_comment:
                 print("  Generating commentary...")
+
+                # Decide whether to include player name based on name_frequency
+                include_name = player_name and (random.random() < self.config.name_frequency)
+                name_to_use = player_name if include_name else None
+
                 commentary = self.commentary_generator.generate_commentary(
                     outcome=outcome,
                     confidence=confidence,
+                    player_name=name_to_use,
                 )
 
                 print(f"  Commentary: \"{commentary}\"")
 
-                # Speak commentary (non-blocking)
-                self.voice_service.speak(commentary, blocking=False)
+                # Speak commentary (non-blocking) - skip if already speaking
+                spoke = self.voice_service.speak(commentary, blocking=False)
+                if not spoke:
+                    print("  (Skipped - previous commentary still playing)")
             else:
                 print(f"  Skipping commentary (frequency: {self.config.commentary_frequency})")
 
@@ -297,103 +368,3 @@ class Monitor:
 
         except Exception as e:
             print(f"  Error processing shot: {e}")
-
-    def correct_last_shot(self) -> None:
-        """Prompt user to correct the last shot."""
-        if not self.session or not self.session.shot_events:
-            print("No shots to correct.")
-            return
-
-        last_shot = self.session.shot_events[-1]
-
-        print("\n" + "=" * 50)
-        print("CORRECT LAST SHOT")
-        print("=" * 50)
-        print(f"Detected outcome: {last_shot.detected_outcome.value}")
-        print(f"Confidence: {last_shot.confidence:.2f}")
-        print(f"Commentary: \"{last_shot.commentary_text}\"")
-        print("\nAvailable outcomes:")
-
-        outcomes = list(Outcome)
-        for i, outcome in enumerate(outcomes, 1):
-            print(f"  {i}. {outcome.value}")
-
-        print("\nEnter the correct outcome number (or 0 to cancel): ", end="")
-
-        try:
-            choice = int(input())
-            if choice == 0:
-                print("Correction cancelled.")
-                return
-
-            if choice < 1 or choice > len(outcomes):
-                print("Invalid choice.")
-                return
-
-            corrected_outcome = outcomes[choice - 1]
-
-            # Optional notes
-            print("Add notes (optional, press Enter to skip): ", end="")
-            notes = input().strip()
-
-            # Create correction
-            correction = UserCorrection(
-                original_outcome=last_shot.detected_outcome,
-                corrected_outcome=corrected_outcome,
-                timestamp=datetime.now(),
-                user_notes=notes,
-            )
-
-            # Record correction
-            self.learning_service.add_correction(correction)
-            last_shot.correction = correction
-
-            # Update pattern cache with correct outcome
-            self.pattern_cache.add_pattern(
-                last_shot.screenshot, corrected_outcome, confidence=1.0
-            )
-
-            # Promote to few-shot example
-            self.learning_service.add_few_shot_example(
-                outcome=corrected_outcome,
-                screenshot_hash=last_shot.screenshot_hash,
-                reasoning=f"User correction from {last_shot.detected_outcome.value}",
-                confidence=1.0,
-            )
-
-            print(f"\nCorrection recorded: {corrected_outcome.value}")
-            print("This will improve future accuracy.")
-            print("=" * 50 + "\n")
-
-        except ValueError:
-            print("Invalid input.")
-        except Exception as e:
-            print(f"Error recording correction: {e}")
-
-    def show_learning_stats(self) -> None:
-        """Display learning statistics."""
-        stats = self.learning_service.get_learning_stats()
-
-        print("\n" + "=" * 50)
-        print("LEARNING STATISTICS")
-        print("=" * 50)
-        print(f"Total corrections: {stats['total_corrections']}")
-        print(f"Total few-shot examples: {stats['total_examples']}")
-
-        if stats['corrections_by_outcome']:
-            print("\nCorrections by outcome:")
-            for outcome, count in stats['corrections_by_outcome'].items():
-                print(f"  {outcome}: {count}")
-
-        if stats['examples_by_outcome']:
-            print("\nFew-shot examples by outcome:")
-            for outcome, count in stats['examples_by_outcome'].items():
-                print(f"  {outcome}: {count}")
-
-        cache_stats = self.pattern_cache.get_stats()
-        print(f"\nPattern cache:")
-        print(f"  Total patterns: {cache_stats['total_patterns']}")
-        print(f"  Total hits: {cache_stats['total_hits']}")
-        print(f"  Hit rate: {cache_stats['hit_rate'] * 100:.1f}%")
-
-        print("=" * 50 + "\n")

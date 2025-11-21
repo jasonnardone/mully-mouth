@@ -47,6 +47,7 @@ class CommentaryGeneratorService:
         outcome: Outcome,
         confidence: float,
         context: Optional[Dict] = None,
+        player_name: Optional[str] = None,
     ) -> str:
         """
         Generate commentary for shot outcome.
@@ -55,6 +56,7 @@ class CommentaryGeneratorService:
             outcome: Detected shot outcome
             confidence: Confidence score (0.0-1.0)
             context: Optional context (distance, club, previous shots, etc.)
+            player_name: Optional player name to include in commentary
 
         Returns:
             Commentary text
@@ -72,13 +74,20 @@ class CommentaryGeneratorService:
             example_phrases = self.personality_config.get("example_phrases", {})
 
             # Build user prompt
-            user_prompt = self._build_user_prompt(outcome, confidence, context, example_phrases)
+            user_prompt = self._build_user_prompt(outcome, confidence, context, example_phrases, player_name)
 
-            # Call Claude API
+            # Call Claude API with prompt caching to reduce costs
+            # System prompt is cached across requests
             message = self.client.messages.create(
                 model=self.model,
                 max_tokens=150,
-                system=system_prompt,
+                system=[
+                    {
+                        "type": "text",
+                        "text": system_prompt,
+                        "cache_control": {"type": "ephemeral"}
+                    }
+                ],
                 messages=[
                     {
                         "role": "user",
@@ -176,6 +185,7 @@ class CommentaryGeneratorService:
         confidence: float,
         context: Optional[Dict],
         example_phrases: Dict,
+        player_name: Optional[str] = None,
     ) -> str:
         """
         Build user prompt for commentary generation.
@@ -185,6 +195,7 @@ class CommentaryGeneratorService:
             confidence: Confidence score
             context: Optional context
             example_phrases: Example phrases from personality config
+            player_name: Optional player name to include
 
         Returns:
             User prompt string
@@ -192,6 +203,9 @@ class CommentaryGeneratorService:
         prompt = f"Generate commentary for this golf shot:\n\n"
         prompt += f"OUTCOME: {outcome.value}\n"
         prompt += f"CONFIDENCE: {confidence:.2f}\n"
+
+        if player_name:
+            prompt += f"PLAYER NAME: {player_name}\n"
 
         if context:
             prompt += f"CONTEXT: {context}\n"
@@ -205,6 +219,9 @@ class CommentaryGeneratorService:
                 prompt += f"- {phrase}\n"
 
         prompt += "\nGenerate a concise (1-2 sentences), personality-appropriate commentary."
+
+        if player_name:
+            prompt += f"\nInclude the player's name '{player_name}' naturally in the commentary."
 
         return prompt
 

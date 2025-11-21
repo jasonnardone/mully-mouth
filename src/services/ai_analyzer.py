@@ -56,11 +56,18 @@ class AIAnalyzerService:
             # Build user prompt
             user_prompt = self._build_user_prompt(few_shot_examples)
 
-            # Call Claude Vision API
+            # Call Claude Vision API with prompt caching to reduce costs
+            # System prompt is cached across requests
             message = self.client.messages.create(
                 model=self.model,
                 max_tokens=1024,
-                system=self.system_prompt,
+                system=[
+                    {
+                        "type": "text",
+                        "text": self.system_prompt,
+                        "cache_control": {"type": "ephemeral"}
+                    }
+                ],
                 messages=[
                     {
                         "role": "user",
@@ -102,6 +109,79 @@ class AIAnalyzerService:
             raise AIServiceError(f"Anthropic API error: {e}")
         except Exception as e:
             raise AIServiceError(f"Failed to analyze shot: {e}")
+
+    def extract_player_name(self, screenshot: np.ndarray) -> Optional[str]:
+        """
+        Extract player name from screenshot using Claude Vision API.
+
+        Args:
+            screenshot: Screenshot to analyze
+
+        Returns:
+            Player name if found, None otherwise
+
+        Raises:
+            AIServiceError: If API call fails
+        """
+        try:
+            # Crop upper left corner for better focus and reduce image size
+            height, width = screenshot.shape[:2]
+            name_region = screenshot[0:int(height * 0.15), 0:int(width * 0.35)]
+
+            # Further resize the name region to minimize tokens
+            # Name extraction doesn't need high resolution
+            from PIL import Image as PILImage
+            import cv2
+            name_img = PILImage.fromarray(name_region.astype("uint8"), "RGB")
+            # Resize to max 400x150 - plenty for reading text
+            name_img = name_img.resize((min(400, name_img.width), min(150, name_img.height)), PILImage.Resampling.LANCZOS)
+            name_region = np.array(name_img)
+
+            # Convert screenshot to base64
+            image_data = self._encode_image(name_region)
+
+            # Call Claude Vision API with specific prompt for name extraction
+            message = self.client.messages.create(
+                model=self.model,
+                max_tokens=50,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image",
+                                "source": {
+                                    "type": "base64",
+                                    "media_type": "image/jpeg",
+                                    "data": image_data,
+                                },
+                            },
+                            {
+                                "type": "text",
+                                "text": "Look at the upper left corner of this golf simulator screen. What is the player's name displayed? Reply with ONLY the name, nothing else. If you cannot find a name, reply with 'NONE'.",
+                            },
+                        ],
+                    }
+                ],
+            )
+
+            # Parse response
+            if not message.content:
+                return None
+
+            name = message.content[0].text.strip()
+
+            # Check if name was found
+            if name.upper() == "NONE" or not name:
+                return None
+
+            return name
+
+        except anthropic.APIError as e:
+            # API error, return None
+            return None
+        except Exception as e:
+            return None
 
     def estimate_cost(self, screenshot: np.ndarray, few_shot_examples: Optional[list] = None) -> float:
         """
@@ -210,9 +290,10 @@ Be concise and accurate. Use high confidence (>0.8) only when very certain."""
         # Convert to PIL Image
         img = Image.fromarray(screenshot.astype("uint8"), "RGB")
 
-        # Resize to reasonable dimensions (max 1920x1080)
-        max_width = 1920
-        max_height = 1080
+        # Resize more aggressively to save tokens (max 1280x720)
+        # Golf shots don't need super high resolution for AI to detect outcomes
+        max_width = 1280
+        max_height = 720
 
         # Calculate new dimensions maintaining aspect ratio
         width, height = img.size
@@ -222,9 +303,9 @@ Be concise and accurate. Use high confidence (>0.8) only when very certain."""
             new_height = int(height * ratio)
             img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
-        # Encode to JPEG with quality adjustment to stay under 5 MB
+        # Encode to JPEG with lower quality to save tokens (still good for AI)
         max_size = 4_800_000  # 4.8 MB to be safe (under 5 MB limit)
-        quality = 85
+        quality = 75  # Lower quality, but still sufficient for AI analysis
 
         while quality > 20:
             buffer = BytesIO()

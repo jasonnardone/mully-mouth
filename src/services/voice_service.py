@@ -44,7 +44,7 @@ class VoiceService:
         self.current_thread: Optional[threading.Thread] = None
         self.is_speaking = False
 
-    def speak(self, text: str, blocking: bool = False) -> None:
+    def speak(self, text: str, blocking: bool = False) -> bool:
         """
         Speak text using ElevenLabs TTS.
 
@@ -52,9 +52,16 @@ class VoiceService:
             text: Text to speak
             blocking: If True, wait for speech to complete; if False, run in background
 
+        Returns:
+            True if speech started, False if skipped (already speaking)
+
         Raises:
             VoiceServiceError: If TTS fails
         """
+        # Check if already speaking - skip if so to prevent overlap
+        if self.is_speaking:
+            return False
+
         if blocking:
             self._speak_sync(text)
         else:
@@ -65,6 +72,8 @@ class VoiceService:
                 daemon=True,
             )
             self.current_thread.start()
+
+        return True
 
     def speak_streaming(self, text: str) -> None:
         """
