@@ -145,6 +145,7 @@ class CommentaryGeneratorService:
                 prompt += f"\nInclude the player's name '{player_name}' naturally in the commentary."
 
             prompt += "\nGenerate a concise (1-2 sentences), personality-appropriate, celebratory commentary that captures the excitement of this achievement."
+            prompt += "\n\nIMPORTANT: Do NOT censor or edit any profanity or swear words. Write them in full without asterisks (*) or other replacements. They need to be pronounced correctly by text-to-speech."
 
             # Call Claude API
             message = self.client.messages.create(
@@ -315,6 +316,8 @@ class CommentaryGeneratorService:
 
         if player_name:
             prompt += f"\nInclude the player's name '{player_name}' naturally in the commentary."
+
+        prompt += "\n\nIMPORTANT: Do NOT censor or edit any profanity or swear words. Write them in full without asterisks (*) or other replacements. They need to be pronounced correctly by text-to-speech."
 
         return prompt
 
