@@ -248,6 +248,16 @@ class VoiceService:
 
         except Exception as e:
             self.is_speaking = False
+
+            # Check for quota exceeded error
+            error_str = str(e)
+            if "quota_exceeded" in error_str or "401" in error_str:
+                print("  ⚠️  ElevenLabs quota exceeded - skipping voice synthesis")
+                print("  💡 Commentary will continue without voice until quota resets")
+                # Don't raise - just skip voice synthesis gracefully
+                return
+
+            # For other errors, raise
             raise VoiceServiceError(f"Failed to generate TTS audio: {e}")
 
     def estimate_cost(self, text: str) -> float:
