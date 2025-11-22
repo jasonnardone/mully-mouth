@@ -11,6 +11,7 @@ AI-powered golf shot narration for GS Pro simulator using Claude Vision and Elev
 - **Player Name Recognition**: Extracts and mentions player names in commentary
 - **Personality-Driven Commentary**: Multiple commentary personalities (neutral, sarcastic, encouraging)
 - **Voice Narration**: Natural speech synthesis using ElevenLabs
+- **Personality-Specific Voices**: Each personality can have its own unique voice
 - **Cost Optimization**: Pattern cache reduces AI API calls by 70-80%
 - **Learning System**: Train AI with custom screenshots for improved accuracy
 - **Adjustable Frequencies**: Control commentary and name mention frequency

@@ -202,6 +202,25 @@ class CommentaryGeneratorService:
             "tone": self.personality_config.get("tone", "neutral"),
         }
 
+    def get_voice_config(self) -> Optional[Dict]:
+        """
+        Get voice configuration for current personality.
+
+        Returns:
+            Dictionary with voice_id and voice_settings, or None if not configured
+        """
+        voice_id = self.personality_config.get("voice_id")
+        voice_settings = self.personality_config.get("voice_settings", {})
+
+        # Return None if voice_id is not set, is None, or is the string "null"
+        if not voice_id or voice_id is None or str(voice_id).lower() == "null":
+            return None
+
+        return {
+            "voice_id": voice_id,
+            "voice_settings": voice_settings,
+        }
+
     def list_available_personalities(self) -> List[str]:
         """
         List all available personality names.

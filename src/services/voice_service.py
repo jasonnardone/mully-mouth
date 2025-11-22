@@ -106,6 +106,32 @@ class VoiceService:
             self.is_speaking = False
             raise VoiceServiceError(f"Failed to stream TTS audio: {e}")
 
+    def update_voice(
+        self,
+        voice_id: Optional[str] = None,
+        stability: Optional[float] = None,
+        similarity_boost: Optional[float] = None,
+    ) -> None:
+        """
+        Update voice settings dynamically.
+
+        Args:
+            voice_id: New voice ID (if None, keeps current)
+            stability: New stability value (if None, keeps current)
+            similarity_boost: New similarity boost (if None, keeps current)
+        """
+        if voice_id is not None:
+            self.voice_id = voice_id
+
+        if stability is not None or similarity_boost is not None:
+            current_stability = self.voice_settings.stability
+            current_similarity = self.voice_settings.similarity_boost
+
+            self.voice_settings = VoiceSettings(
+                stability=stability if stability is not None else current_stability,
+                similarity_boost=similarity_boost if similarity_boost is not None else current_similarity,
+            )
+
     def stop(self) -> None:
         """Stop current speech (if running in background)."""
         self.should_stop = True

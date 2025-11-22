@@ -380,6 +380,19 @@ class Monitor:
                 include_name = player_name and (random.random() < self.config.name_frequency)
                 name_to_use = player_name if include_name else None
 
+                # Update voice settings for current personality (if configured)
+                try:
+                    voice_config = self.commentary_generator.get_voice_config()
+                    if voice_config:
+                        self.voice_service.update_voice(
+                            voice_id=voice_config.get("voice_id"),
+                            stability=voice_config.get("voice_settings", {}).get("stability"),
+                            similarity_boost=voice_config.get("voice_settings", {}).get("similarity_boost"),
+                        )
+                        print(f"  Using voice: {voice_config.get('voice_id')[:8]}...")
+                except Exception as e:
+                    print(f"  Warning: Could not apply voice config: {e}")
+
                 commentary = self.commentary_generator.generate_achievement_commentary(
                     achievement=achievement,
                     player_name=name_to_use,
@@ -436,6 +449,19 @@ class Monitor:
                 # Decide whether to include player name based on name_frequency
                 include_name = player_name and (random.random() < self.config.name_frequency)
                 name_to_use = player_name if include_name else None
+
+                # Update voice settings for current personality (if configured)
+                try:
+                    voice_config = self.commentary_generator.get_voice_config()
+                    if voice_config:
+                        self.voice_service.update_voice(
+                            voice_id=voice_config.get("voice_id"),
+                            stability=voice_config.get("voice_settings", {}).get("stability"),
+                            similarity_boost=voice_config.get("voice_settings", {}).get("similarity_boost"),
+                        )
+                        print(f"  Using voice: {voice_config.get('voice_id')[:8]}...")
+                except Exception as e:
+                    print(f"  Warning: Could not apply voice config: {e}")
 
                 commentary = self.commentary_generator.generate_commentary(
                     outcome=outcome,

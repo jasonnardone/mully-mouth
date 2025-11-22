@@ -126,23 +126,33 @@ class TrayApplication:
         """
         was_running = self.monitor and self.monitor.is_running
 
-        # Stop monitoring if running
-        if was_running:
-            self.stop_monitoring()
+        try:
+            # Stop monitoring if running
+            if was_running:
+                self.stop_monitoring()
 
-        # Update config
-        self.config.personality = personality_name
+            # Update config
+            self.config.personality = personality_name
 
-        # Save config
-        self._save_config()
+            # Save config
+            self._save_config()
 
-        # Restart if was running
-        if was_running:
-            self.start_monitoring()
+            # Restart if was running
+            if was_running:
+                self.start_monitoring()
 
-        # Update menu
-        if self.icon:
-            self.icon.menu = self._create_menu()
+            # Update menu
+            if self.icon:
+                self.icon.menu = self._create_menu()
+
+            print(f"Personality changed to: {personality_name}")
+
+        except Exception as e:
+            self._show_error(f"Failed to change personality: {e}")
+            # Ensure icon is updated even on error
+            if self.icon:
+                self.icon.icon = self._create_icon(active=False)
+                self.icon.menu = self._create_menu()
 
     def set_commentary_frequency(self, frequency: float) -> None:
         """
@@ -296,7 +306,7 @@ class TrayApplication:
                         Item(
                             p.title(),
                             lambda _, p=p: self.change_personality(p),
-                            checked=lambda item, p=p: self.config.personality == p
+                            checked=lambda item, p=p: self.config.personality.lower() == p.lower()
                         )
                         for p in self._get_personalities()
                     ]
@@ -312,29 +322,59 @@ class TrayApplication:
                         'Commentary Frequency',
                         pystray.Menu(
                             Item(
-                                'Always (100%)',
+                                '100%',
                                 lambda _: self.set_commentary_frequency(1.0),
-                                checked=lambda item: self.config.commentary_frequency == 1.0
+                                checked=lambda item: abs(self.config.commentary_frequency - 1.0) < 0.01
                             ),
                             Item(
-                                'Often (75%)',
-                                lambda _: self.set_commentary_frequency(0.75),
-                                checked=lambda item: self.config.commentary_frequency == 0.75
+                                '90%',
+                                lambda _: self.set_commentary_frequency(0.9),
+                                checked=lambda item: abs(self.config.commentary_frequency - 0.9) < 0.01
                             ),
                             Item(
-                                'Sometimes (50%)',
+                                '80%',
+                                lambda _: self.set_commentary_frequency(0.8),
+                                checked=lambda item: abs(self.config.commentary_frequency - 0.8) < 0.01
+                            ),
+                            Item(
+                                '70%',
+                                lambda _: self.set_commentary_frequency(0.7),
+                                checked=lambda item: abs(self.config.commentary_frequency - 0.7) < 0.01
+                            ),
+                            Item(
+                                '60%',
+                                lambda _: self.set_commentary_frequency(0.6),
+                                checked=lambda item: abs(self.config.commentary_frequency - 0.6) < 0.01
+                            ),
+                            Item(
+                                '50%',
                                 lambda _: self.set_commentary_frequency(0.5),
-                                checked=lambda item: self.config.commentary_frequency == 0.5
+                                checked=lambda item: abs(self.config.commentary_frequency - 0.5) < 0.01
                             ),
                             Item(
-                                'Rarely (25%)',
-                                lambda _: self.set_commentary_frequency(0.25),
-                                checked=lambda item: self.config.commentary_frequency == 0.25
+                                '40%',
+                                lambda _: self.set_commentary_frequency(0.4),
+                                checked=lambda item: abs(self.config.commentary_frequency - 0.4) < 0.01
                             ),
                             Item(
-                                'Never (0%)',
+                                '30%',
+                                lambda _: self.set_commentary_frequency(0.3),
+                                checked=lambda item: abs(self.config.commentary_frequency - 0.3) < 0.01
+                            ),
+                            Item(
+                                '20%',
+                                lambda _: self.set_commentary_frequency(0.2),
+                                checked=lambda item: abs(self.config.commentary_frequency - 0.2) < 0.01
+                            ),
+                            Item(
+                                '10%',
+                                lambda _: self.set_commentary_frequency(0.1),
+                                checked=lambda item: abs(self.config.commentary_frequency - 0.1) < 0.01
+                            ),
+                            Item(
+                                '0%',
                                 lambda _: self.set_commentary_frequency(0.0),
-                                checked=lambda item: self.config.commentary_frequency == 0.0
+                                checked=lambda item: abs(self.config.commentary_frequency - 0.0) < 0.01
                             ),
                         )
                     ),
@@ -343,29 +383,59 @@ class TrayApplication:
                         'Name Frequency',
                         pystray.Menu(
                             Item(
-                                'Always (100%)',
+                                '100%',
                                 lambda _: self.set_name_frequency(1.0),
-                                checked=lambda item: self.config.name_frequency == 1.0
+                                checked=lambda item: abs(self.config.name_frequency - 1.0) < 0.01
                             ),
                             Item(
-                                'Often (75%)',
-                                lambda _: self.set_name_frequency(0.75),
-                                checked=lambda item: self.config.name_frequency == 0.75
+                                '90%',
+                                lambda _: self.set_name_frequency(0.9),
+                                checked=lambda item: abs(self.config.name_frequency - 0.9) < 0.01
                             ),
                             Item(
-                                'Sometimes (50%)',
+                                '80%',
+                                lambda _: self.set_name_frequency(0.8),
+                                checked=lambda item: abs(self.config.name_frequency - 0.8) < 0.01
+                            ),
+                            Item(
+                                '70%',
+                                lambda _: self.set_name_frequency(0.7),
+                                checked=lambda item: abs(self.config.name_frequency - 0.7) < 0.01
+                            ),
+                            Item(
+                                '60%',
+                                lambda _: self.set_name_frequency(0.6),
+                                checked=lambda item: abs(self.config.name_frequency - 0.6) < 0.01
+                            ),
+                            Item(
+                                '50%',
                                 lambda _: self.set_name_frequency(0.5),
-                                checked=lambda item: self.config.name_frequency == 0.5
+                                checked=lambda item: abs(self.config.name_frequency - 0.5) < 0.01
                             ),
                             Item(
-                                'Rarely (25%)',
-                                lambda _: self.set_name_frequency(0.25),
-                                checked=lambda item: self.config.name_frequency == 0.25
+                                '40%',
+                                lambda _: self.set_name_frequency(0.4),
+                                checked=lambda item: abs(self.config.name_frequency - 0.4) < 0.01
                             ),
                             Item(
-                                'Never (0%)',
+                                '30%',
+                                lambda _: self.set_name_frequency(0.3),
+                                checked=lambda item: abs(self.config.name_frequency - 0.3) < 0.01
+                            ),
+                            Item(
+                                '20%',
+                                lambda _: self.set_name_frequency(0.2),
+                                checked=lambda item: abs(self.config.name_frequency - 0.2) < 0.01
+                            ),
+                            Item(
+                                '10%',
+                                lambda _: self.set_name_frequency(0.1),
+                                checked=lambda item: abs(self.config.name_frequency - 0.1) < 0.01
+                            ),
+                            Item(
+                                '0%',
                                 lambda _: self.set_name_frequency(0.0),
-                                checked=lambda item: self.config.name_frequency == 0.0
+                                checked=lambda item: abs(self.config.name_frequency - 0.0) < 0.01
                             ),
                         )
                     ),
@@ -454,14 +524,14 @@ class TrayApplication:
             with open(config_file, 'r') as f:
                 config_data = yaml.safe_load(f)
 
-            # Update with current values
-            config_data['personality'] = self.config.personality
-            config_data['commentary_frequency'] = self.config.commentary_frequency
-            config_data['name_frequency'] = self.config.name_frequency
+            # Update with current values (ensure strings, not objects)
+            config_data['personality'] = str(self.config.personality)
+            config_data['commentary_frequency'] = float(self.config.commentary_frequency)
+            config_data['name_frequency'] = float(self.config.name_frequency)
 
-            # Save back
+            # Save back using safe_dump to prevent object serialization
             with open(config_file, 'w') as f:
-                yaml.dump(config_data, f, default_flow_style=False)
+                yaml.safe_dump(config_data, f, default_flow_style=False, sort_keys=False)
 
         except Exception as e:
             self._show_error(f"Failed to save config: {e}")

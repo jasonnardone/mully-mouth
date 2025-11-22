@@ -1,0 +1,30 @@
+anthropic:
+  model: claude-3-5-haiku-latest
+cache:
+  hamming_threshold: 10
+  min_confidence_to_cache: 0.7
+  pattern_cache_file: data/cache/pattern_cache.json
+commentary_frequency: 1.0
+cost:
+  max_cost_per_round: 5.0
+  warn_at_cost: 3.0
+elevenlabs:
+  model: eleven_turbo_v2_5
+  similarity_boost: 0.75
+  stability: 0.5
+  voice_id: NOpBlnGInO9m6vDvFkFC
+hotkeys:
+  correction_mode: null
+  force_analyze: null
+  toggle_voice: null
+logging:
+  file: logs/mully_mouth.log
+  level: INFO
+monitoring:
+  ball_stop_duration: 1.0
+  fps: 2
+  motion_threshold: 0.02
+name_frequency: 1.0
+personality: Jerk
+training:
+  images_dir: data/training/images

@@ -45,7 +45,7 @@ Thumbs.db
 .env.*
 
 # Application-specific
-config/config.yaml
+# config/config.yaml
 data/sessions/
 data/training/
 data/cache/
