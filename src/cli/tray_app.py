@@ -15,6 +15,7 @@ from pystray import MenuItem as Item
 from src.cli.monitor import Monitor
 from src.lib.config import Config, load_config
 from src.lib.exceptions import ServiceError
+from src.lib.single_instance import SingleInstance, SingleInstanceError
 
 
 class TrayApplication:
@@ -37,6 +38,7 @@ class TrayApplication:
         self.monitor_thread: Optional[threading.Thread] = None
         self.icon: Optional[pystray.Icon] = None
         self.should_exit = False
+        self.single_instance: Optional[SingleInstance] = None
 
     def run(self) -> None:
         """Run the system tray application."""
@@ -289,6 +291,10 @@ class TrayApplication:
             # Wait for thread to finish
             if self.monitor_thread and self.monitor_thread.is_alive():
                 self.monitor_thread.join(timeout=5.0)
+
+        # Release single instance lock
+        if self.single_instance:
+            self.single_instance.release()
 
         # Stop the icon
         if self.icon:
@@ -647,13 +653,40 @@ class TrayApplication:
 
 def main():
     """Main entry point for system tray application."""
+    single_instance = None
+
     try:
+        # Check for single instance FIRST before loading anything else
+        try:
+            single_instance = SingleInstance("mully_mouth")
+        except SingleInstanceError as e:
+            # Another instance is already running
+            error_msg = str(e)
+            try:
+                import ctypes
+                # MB_OK | MB_ICONWARNING
+                ctypes.windll.user32.MessageBoxW(0, error_msg, "Mully Mouth Already Running", 0x00000030)
+            except:
+                print(error_msg)
+            sys.exit(0)
+
         # Load configuration
         config = load_config()
 
         # Create and run tray application
         app = TrayApplication(config)
+        app.single_instance = single_instance  # Store reference for cleanup
         app.run()
+
+    except SingleInstanceError as e:
+        # Already handled above, but just in case
+        error_msg = str(e)
+        try:
+            import ctypes
+            ctypes.windll.user32.MessageBoxW(0, error_msg, "Mully Mouth Already Running", 0x00000030)
+        except:
+            print(error_msg)
+        sys.exit(0)
 
     except Exception as e:
         # Show error in message box for GUI users
@@ -677,6 +710,11 @@ def main():
             print(f"Fatal error: {error_msg}")
 
         sys.exit(1)
+
+    finally:
+        # Always release single instance lock on exit
+        if single_instance:
+            single_instance.release()
 
 
 if __name__ == "__main__":
