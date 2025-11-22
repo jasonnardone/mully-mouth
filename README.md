@@ -4,17 +4,18 @@ AI-powered golf shot narration for GS Pro simulator using Claude Vision and Elev
 
 ## Features
 
-- **Windows System Tray UI**: User-friendly interface with no command line needed
+- **Windows System Tray UI**: User-friendly interface with no command line needed - just double-click to start
+- **Manual Start/Stop Control**: Monitoring is OFF by default - you decide when to start
 - **Automatic Shot Detection**: Uses motion detection to identify when shots are complete
 - **AI Shot Analysis**: Claude Vision API analyzes screenshots to determine shot outcomes
 - **Score Achievement Detection**: Recognizes and celebrates Birdies, Eagles, Pars, etc.
 - **Player Name Recognition**: Extracts and mentions player names in commentary
-- **Personality-Driven Commentary**: Multiple commentary personalities (neutral, sarcastic, encouraging)
+- **Multiple Personalities**: Choose from Neutral, Sarcastic, Encouraging, or Jerk commentary styles
 - **Voice Narration**: Natural speech synthesis using ElevenLabs
 - **Personality-Specific Voices**: Each personality can have its own unique voice
+- **Live Settings Adjustment**: Change commentary frequency, name frequency, and personality without restarting
 - **Cost Optimization**: Pattern cache reduces AI API calls by 70-80%
 - **Learning System**: Train AI with custom screenshots for improved accuracy
-- **Adjustable Frequencies**: Control commentary and name mention frequency
 
 ## Quick Start
 
@@ -38,61 +39,55 @@ cd mully-mouth
 pip install -r requirements.txt
 ```
 
-3. Configure API keys (choose ONE method):
+3. Configure API keys:
 
-**Method A: Secure Credential Storage (Recommended)**
-```bash
-python setup_credentials.py
-```
-Your API keys are stored securely in Windows Credential Manager, encrypted by Windows, and never saved in plain text files. Perfect for public GitHub repos!
-
-**Method B: Environment Variables**
-```bash
-# Windows PowerShell
-$env:ANTHROPIC_API_KEY="your-key-here"
-$env:ELEVENLABS_API_KEY="your-key-here"
-
-# Or set permanently in Windows System Environment Variables
-```
-
-**Method C: Config File (Not recommended for public repos)**
-```bash
-cp config/config.yaml.template config/config.yaml
-# Edit config/config.yaml and add your API keys
-```
-
-**Method D: Setup Wizard (Interactive)**
+**Recommended: Setup Wizard**
 ```bash
 python setup_wizard.py
 ```
-The wizard will guide you through all configuration options.
+The wizard will:
+- Guide you through entering your Anthropic and ElevenLabs API keys
+- Store them securely in Windows Credential Manager (encrypted by Windows)
+- Set up your configuration with sensible defaults
+- Never save API keys in plain text files
+
+**Alternative Methods:**
+
+- **Environment Variables**: Set `ANTHROPIC_API_KEY` and `ELEVENLABS_API_KEY` in Windows System Environment Variables
+- **Config File**: Copy `config/config.yaml.template` to `config/config.yaml` and edit (not recommended for public repos)
 
 ### Usage
 
-#### Option 1: System Tray (Recommended for Non-Technical Users)
+#### Recommended: System Tray Application
 
-**Double-click `mully-mouth.bat`** to start the system tray application.
+1. **Start GS Pro** and make your video fullscreen
+2. **Double-click `mully-mouth.bat`** to launch the system tray app
+3. Look for the **GRAY "M" icon** in your system tray (bottom-right corner)
+4. **Right-click the icon** and select **"Start Monitoring"** to begin
+5. Play golf - commentary will be generated automatically!
 
-- Look for the gray "M" icon in your system tray (bottom-right corner)
-- Right-click the icon and select "Start Monitoring" to begin
-- Change settings, view stats, start/stop monitoring anytime
-- **Starts in stopped mode** - you control when monitoring begins
+**System Tray Features:**
+- **Start/Stop Monitoring**: Click to begin or pause commentary
+- **Change Personality**: Switch between Neutral, Sarcastic, Encouraging, or Jerk on the fly
+- **Adjust Settings**:
+  - **Commentary Frequency** (0%-100%): How often to generate commentary
+  - **Name Frequency** (0%-100%): How often to mention player names
+- **Session Stats**: View shots, costs, cache hit rate, and accuracy
+- **Open Config File**: Quick access to configuration
 
-**See [SYSTEM_TRAY_GUIDE.md](SYSTEM_TRAY_GUIDE.md) for detailed instructions.**
+**Note**: The app starts in **stopped mode** by default - you control when monitoring begins.
 
-#### Option 2: Command Line
+**See [SYSTEM_TRAY_GUIDE.md](SYSTEM_TRAY_GUIDE.md) for detailed screenshots and instructions.**
+
+#### Alternative: Command Line
 
 1. Start GS Pro
-
 2. Run Mully Mouth:
 ```bash
 python -m src.cli.main
 ```
 
-3. Play golf in GS Pro - commentary will be generated automatically
-
-### Command-Line Options
-
+**Command-Line Options:**
 ```bash
 # Use a specific personality
 python -m src.cli.main --personality sarcastic
@@ -106,20 +101,29 @@ python -m src.cli.main --config path/to/config.yaml
 
 ### Available Personalities
 
-- **neutral**: Professional, informative commentary
-- **sarcastic**: Humorous, light-hearted ribbing
-- **encouraging**: Supportive, motivational commentary
+- **Neutral**: Professional, informative commentary
+- **Sarcastic**: Humorous, light-hearted ribbing with witty remarks
+- **Encouraging**: Supportive, motivational, always positive
+- **Jerk**: Brutally honest, snarky, and harsh (for those who like a challenge!)
+
+Each personality can have its own unique ElevenLabs voice - see [VOICE_CONFIGURATION_GUIDE.md](VOICE_CONFIGURATION_GUIDE.md) for setup.
 
 ## Configuration
 
-Edit `config/config.yaml` to customize:
+Most settings can be adjusted directly from the **system tray menu** without editing files:
+- Commentary frequency (0%-100% in 10% increments)
+- Name frequency (0%-100% in 10% increments)
+- Personality selection
 
-- API keys and models
-- Commentary personality
+For advanced configuration, edit `config/config.yaml`:
+- AI models (Claude Sonnet, Haiku, etc.)
 - Motion detection sensitivity
 - Cache settings
-- Voice settings (voice ID, stability, similarity)
-- Cost limits
+- Voice settings per personality (voice ID, stability, similarity)
+- Cost limits and warnings
+- Monitoring FPS and thresholds
+
+**Note**: Settings changed via the system tray are saved immediately to `config.yaml`.
 
 ## Cost Estimates
 
@@ -190,17 +194,39 @@ example_phrases:
 
 ## Troubleshooting
 
-### GS Pro window not found
-- Ensure GS Pro is running
-- Check that "GS Pro" appears in the window title
+### System tray icon doesn't appear
+- Check Windows system tray overflow area (click the ^ arrow)
+- Make sure Python and dependencies are installed correctly
+- Try running `python -m src.cli.tray_app` directly to see any error messages
 
-### No API key errors
-- Set environment variables or edit `config/config.yaml`
-- Verify keys are valid
+### GS Pro window not found
+- Ensure GS Pro is running and visible
+- Make your GS Pro video **fullscreen** for best capture
+- The app captures the primary monitor - ensure GS Pro is on your main display
+
+### API key errors when launching
+- Run `python setup_wizard.py` to configure API keys securely
+- Or set environment variables: `ANTHROPIC_API_KEY` and `ELEVENLABS_API_KEY`
+- Verify keys are valid at console.anthropic.com and elevenlabs.io
+
+### Stop Monitoring doesn't stop commentary
+- The system waits for any in-progress shot to complete (up to 10 seconds)
+- If commentary is playing, it will finish before stopping completely
+
+### Commentary frequency changes don't work
+- Make sure you've selected a checkmark next to one of the frequency options
+- The selected frequency should show a ✓ checkmark
+- Changes apply immediately without restarting
 
 ### Motion detection too sensitive/not sensitive enough
-- Adjust `monitoring.motion_threshold` in config (default: 0.02)
-- Lower values = more sensitive
+- Adjust `monitoring.motion_threshold` in `config/config.yaml` (default: 0.02)
+- Lower values = more sensitive, higher values = less sensitive
+- Adjust `monitoring.ball_stop_duration` for how long the ball must be still (default: 1.0 second)
+
+### Config file corruption
+- If you see YAML errors, the config may have been corrupted
+- Copy `config/config.yaml.template` to `config/config.yaml` and reconfigure
+- Never edit the config file while the app is running
 
 ## License
 
