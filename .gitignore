@@ -10,7 +10,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+#lib/
 lib64/
 parts/
 sdist/
@@ -47,7 +47,7 @@ Thumbs.db
 # Application-specific
 # config/config.yaml
 data/sessions/
-data/training/
+#data/training/
 data/cache/
 *.log
 

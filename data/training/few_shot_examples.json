@@ -1,0 +1,218 @@
+{
+  "examples": {
+    "fairway": [
+      {
+        "screenshot_hash": "Screenshot 2025-11-20 205117",
+        "outcome": "fairway",
+        "reasoning": "Manual training example: fairway",
+        "confidence": 1.0
+      },
+      {
+        "screenshot_hash": "Screenshot 2025-11-20 205545",
+        "outcome": "fairway",
+        "reasoning": "Manual training example: fairway",
+        "confidence": 1.0
+      },
+      {
+        "screenshot_hash": "Screenshot 2025-11-20 205718",
+        "outcome": "fairway",
+        "reasoning": "Manual training example: fairway",
+        "confidence": 1.0
+      },
+      {
+        "screenshot_hash": "Screenshot 2025-11-21 111716",
+        "outcome": "fairway",
+        "reasoning": "Manual training example: fairway",
+        "confidence": 1.0
+      },
+      {
+        "screenshot_hash": "Screenshot 2025-11-21 112025",
+        "outcome": "fairway",
+        "reasoning": "Manual training example: fairway",
+        "confidence": 1.0
+      }
+    ],
+    "green": [
+      {
+        "screenshot_hash": "Screenshot 2025-11-20 205139",
+        "outcome": "green",
+        "reasoning": "Manual training example: green",
+        "confidence": 1.0
+      },
+      {
+        "screenshot_hash": "Screenshot 2025-11-20 205231",
+        "outcome": "green",
+        "reasoning": "Manual training example: green",
+        "confidence": 1.0
+      },
+      {
+        "screenshot_hash": "Screenshot 2025-11-20 210255",
+        "outcome": "green",
+        "reasoning": "Manual training example: green",
+        "confidence": 1.0
+      },
+      {
+        "screenshot_hash": "Screenshot 2025-11-21 111859",
+        "outcome": "green",
+        "reasoning": "Manual training example: green",
+        "confidence": 1.0
+      },
+      {
+        "screenshot_hash": "Screenshot 2025-11-21 112212",
+        "outcome": "green",
+        "reasoning": "Manual training example: green",
+        "confidence": 1.0
+      }
+    ],
+    "water": [
+      {
+        "screenshot_hash": "Screenshot 2025-11-21 112436",
+        "outcome": "water",
+        "reasoning": "Manual training example: water",
+        "confidence": 1.0
+      },
+      {
+        "screenshot_hash": "Screenshot 2025-11-21 112436",
+        "outcome": "water",
+        "reasoning": "Manual training example: water",
+        "confidence": 1.0
+      }
+    ],
+    "bunker": [
+      {
+        "screenshot_hash": "Screenshot 2025-11-21 120624",
+        "outcome": "bunker",
+        "reasoning": "Manual training example: bunker",
+        "confidence": 1.0
+      },
+      {
+        "screenshot_hash": "Screenshot 2025-11-21 132942",
+        "outcome": "bunker",
+        "reasoning": "Manual training example: bunker",
+        "confidence": 1.0
+      },
+      {
+        "screenshot_hash": "Screenshot 2025-11-20 210451",
+        "outcome": "bunker",
+        "reasoning": "Manual training example: bunker",
+        "confidence": 1.0
+      },
+      {
+        "screenshot_hash": "Screenshot 2025-11-21 120624",
+        "outcome": "bunker",
+        "reasoning": "Manual training example: bunker",
+        "confidence": 1.0
+      },
+      {
+        "screenshot_hash": "Screenshot 2025-11-21 132942",
+        "outcome": "bunker",
+        "reasoning": "Manual training example: bunker",
+        "confidence": 1.0
+      }
+    ],
+    "rough": [
+      {
+        "screenshot_hash": "Screenshot 2025-11-20 210549",
+        "outcome": "rough",
+        "reasoning": "Manual training example: rough",
+        "confidence": 1.0
+      },
+      {
+        "screenshot_hash": "Screenshot 2025-11-20 210829",
+        "outcome": "rough",
+        "reasoning": "Manual training example: rough",
+        "confidence": 1.0
+      },
+      {
+        "screenshot_hash": "Screenshot 2025-11-20 210405",
+        "outcome": "rough",
+        "reasoning": "Manual training example: rough",
+        "confidence": 1.0
+      },
+      {
+        "screenshot_hash": "Screenshot 2025-11-20 210549",
+        "outcome": "rough",
+        "reasoning": "Manual training example: rough",
+        "confidence": 1.0
+      },
+      {
+        "screenshot_hash": "Screenshot 2025-11-20 210829",
+        "outcome": "rough",
+        "reasoning": "Manual training example: rough",
+        "confidence": 1.0
+      }
+    ],
+    "trees": [
+      {
+        "screenshot_hash": "Screenshot 2025-11-20 210705",
+        "outcome": "trees",
+        "reasoning": "Manual training example: trees",
+        "confidence": 1.0
+      },
+      {
+        "screenshot_hash": "Screenshot 2025-11-21 112848",
+        "outcome": "trees",
+        "reasoning": "Manual training example: trees",
+        "confidence": 1.0
+      },
+      {
+        "screenshot_hash": "Screenshot 2025-11-20 210705",
+        "outcome": "trees",
+        "reasoning": "Manual training example: trees",
+        "confidence": 1.0
+      },
+      {
+        "screenshot_hash": "Screenshot 2025-11-21 112848",
+        "outcome": "trees",
+        "reasoning": "Manual training example: trees",
+        "confidence": 1.0
+      }
+    ],
+    "out_of_bounds": [
+      {
+        "screenshot_hash": "Screenshot 2025-11-20 204948",
+        "outcome": "out_of_bounds",
+        "reasoning": "Manual training example: out_of_bounds",
+        "confidence": 1.0
+      },
+      {
+        "screenshot_hash": "Screenshot 2025-11-20 204948",
+        "outcome": "out_of_bounds",
+        "reasoning": "Manual training example: out_of_bounds",
+        "confidence": 1.0
+      }
+    ],
+    "idle": [
+      {
+        "screenshot_hash": "NewRoundHoles",
+        "outcome": "idle",
+        "reasoning": "Manual training example: idle",
+        "confidence": 1.0
+      },
+      {
+        "screenshot_hash": "NewRoundPlayers",
+        "outcome": "idle",
+        "reasoning": "Manual training example: idle",
+        "confidence": 1.0
+      },
+      {
+        "screenshot_hash": "Screenshot 2025-11-22 091112",
+        "outcome": "idle",
+        "reasoning": "Manual training example: idle",
+        "confidence": 1.0
+      },
+      {
+        "screenshot_hash": "Screenshot 2025-11-22 091455",
+        "outcome": "idle",
+        "reasoning": "Manual training example: idle",
+        "confidence": 1.0
+      },
+      {
+        "screenshot_hash": "Screenshot 2025-11-22 091637",
+        "outcome": "idle",
+        "reasoning": "Manual training example: idle",
+        "confidence": 1.0
+      }
+    ]
+  }
+}
