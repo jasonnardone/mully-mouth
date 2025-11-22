@@ -36,7 +36,7 @@ class TrayApplication:
         self.config = config
         self.monitor: Optional[Monitor] = None
         self.monitor_thread: Optional[threading.Thread] = None
-        self.icon: Optional[pystray.Icon] = None
+        self.icon: Optional[pystray.Icon] = None # type: ignore
         self.should_exit = False
         self.single_instance: Optional[SingleInstance] = None
 
