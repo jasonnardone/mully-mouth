@@ -175,7 +175,11 @@ class AIAnalyzerService:
             if name.upper() == "NONE" or not name:
                 return None
 
-            return name
+            # Extract only the first name (ignore last name, initials, etc.)
+            # Examples: "Jason N" -> "Jason", "John Smith" -> "John"
+            first_name = name.split()[0] if name else None
+
+            return first_name
 
         except anthropic.APIError as e:
             # API error, return None
