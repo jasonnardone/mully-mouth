@@ -213,7 +213,9 @@ class Monitor:
     def _init_services(self) -> None:
         """Initialize all required services."""
         # Screen capture
-        self.screen_capture = ScreenCaptureService()
+        self.screen_capture = ScreenCaptureService(
+            monitor_index=self.config.monitoring.monitor_index
+        )
 
         # Motion detector
         self.motion_detector = MotionDetectorService(

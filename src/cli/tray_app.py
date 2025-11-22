@@ -206,6 +206,36 @@ class TrayApplication:
         if self.icon:
             self.icon.menu = self._create_menu()
 
+    def set_monitor(self, monitor_index: int) -> None:
+        """
+        Set which monitor to capture.
+
+        Args:
+            monitor_index: Monitor index (0 = primary, 1 = second, etc.)
+        """
+        was_running = self.monitor and self.monitor.is_running
+
+        # Stop monitoring if running
+        if was_running:
+            self.stop_monitoring()
+
+        # Update config
+        self.config.monitoring.monitor_index = monitor_index
+
+        # Save config to file
+        self._save_config()
+
+        # Show confirmation
+        print(f"Monitor set to Monitor {monitor_index + 1}")
+
+        # Restart if was running
+        if was_running:
+            self.start_monitoring()
+
+        # Update menu to show new checkmark
+        if self.icon:
+            self.icon.menu = self._create_menu()
+
     def show_stats(self, icon=None, item=None) -> None:
         """Show session statistics in message box."""
         if not self.monitor:
@@ -309,6 +339,21 @@ class TrayApplication:
                             checked=lambda item, p=p: self.config.personality.lower() == p.lower()
                         )
                         for p in self._get_personalities()
+                    ]
+                )
+            ),
+
+            # Select Monitor
+            Item(
+                'Select Monitor',
+                pystray.Menu(
+                    *[
+                        Item(
+                            f"Monitor {m['index'] + 1} ({m['width']}x{m['height']})",
+                            lambda _, idx=m['index']: self.set_monitor(idx),
+                            checked=lambda item, idx=m['index']: self.config.monitoring.monitor_index == idx
+                        )
+                        for m in self._get_available_monitors()
                     ]
                 )
             ),
@@ -513,6 +558,17 @@ class TrayApplication:
 
         return sorted(personalities) if personalities else ["neutral"]
 
+    def _get_available_monitors(self) -> list[dict]:
+        """
+        Get list of available monitors.
+
+        Returns:
+            List of monitor info dicts
+        """
+        from src.services.screen_capture import ScreenCaptureService
+        temp_capture = ScreenCaptureService()
+        return temp_capture.get_available_monitors()
+
     def _save_config(self) -> None:
         """Save current config to file."""
         import yaml
@@ -528,6 +584,11 @@ class TrayApplication:
             config_data['personality'] = str(self.config.personality)
             config_data['commentary_frequency'] = float(self.config.commentary_frequency)
             config_data['name_frequency'] = float(self.config.name_frequency)
+
+            # Update monitoring config
+            if 'monitoring' not in config_data:
+                config_data['monitoring'] = {}
+            config_data['monitoring']['monitor_index'] = int(self.config.monitoring.monitor_index)
 
             # Save back using safe_dump to prevent object serialization
             with open(config_file, 'w') as f:

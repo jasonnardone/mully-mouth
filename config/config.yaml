@@ -23,6 +23,7 @@ logging:
 monitoring:
   ball_stop_duration: 1.0
   fps: 2
+  monitor_index: 0
   motion_threshold: 0.02
 name_frequency: 0.3
 personality: Jerk

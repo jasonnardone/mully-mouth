@@ -17,8 +17,13 @@ class ScreenCaptureService:
     Uses MSS for fast screen capture and pygetwindow for window detection.
     """
 
-    def __init__(self):
-        """Initialize screen capture service."""
+    def __init__(self, monitor_index: int = 0):
+        """
+        Initialize screen capture service.
+
+        Args:
+            monitor_index: Index of monitor to capture (0 = primary, 1 = second, etc.)
+        """
         self.sct = None  # Will be created in the thread that uses it
         self.window_id: Optional[str] = None
         self.window_rect: Optional[dict] = None
@@ -27,10 +32,11 @@ class ScreenCaptureService:
         self.latest_frame: Optional[np.ndarray] = None
         self.fps = 2
         self._lock = threading.Lock()
+        self.monitor_index = monitor_index
 
     def find_gs_pro_window(self) -> Optional[str]:
         """
-        Use primary monitor for capture (fullscreen mode).
+        Use selected monitor for capture (fullscreen mode).
 
         Returns:
             Monitor description
@@ -40,18 +46,61 @@ class ScreenCaptureService:
             if self.sct is None:
                 self.sct = mss.mss()
 
-            # Use primary monitor (monitor 1)
-            monitor = self.sct.monitors[1]  # 0 is all monitors, 1 is primary
+            # Use selected monitor (monitor_index + 1, since monitors[0] is all monitors)
+            monitor_num = self.monitor_index + 1
+
+            # Make sure the monitor exists
+            if monitor_num >= len(self.sct.monitors):
+                # Fallback to primary monitor if index is invalid
+                monitor_num = 1
+                self.monitor_index = 0
+
+            monitor = self.sct.monitors[monitor_num]
             self.window_rect = {
                 "left": monitor["left"],
                 "top": monitor["top"],
                 "width": monitor["width"],
                 "height": monitor["height"],
             }
-            self.window_id = "Primary Monitor"
-            return f"Primary Monitor ({monitor['width']}x{monitor['height']})"
+            self.window_id = f"Monitor {self.monitor_index + 1}"
+            return f"Monitor {self.monitor_index + 1} ({monitor['width']}x{monitor['height']})"
         except Exception as e:
-            raise WindowNotFoundError(f"Failed to access primary monitor: {e}")
+            raise WindowNotFoundError(f"Failed to access monitor: {e}")
+
+    def get_available_monitors(self) -> list[dict]:
+        """
+        Get list of available monitors.
+
+        Returns:
+            List of monitor info dicts with index, width, height
+        """
+        try:
+            # Create MSS instance if not already created
+            if self.sct is None:
+                self.sct = mss.mss()
+
+            monitors = []
+            # Skip monitors[0] which represents all monitors combined
+            for i, monitor in enumerate(self.sct.monitors[1:]):
+                monitors.append({
+                    "index": i,
+                    "width": monitor["width"],
+                    "height": monitor["height"],
+                    "left": monitor["left"],
+                    "top": monitor["top"],
+                })
+            return monitors
+        except Exception:
+            return []
+
+    def set_monitor(self, monitor_index: int) -> None:
+        """
+        Change which monitor to capture.
+
+        Args:
+            monitor_index: Index of monitor to capture (0 = primary, 1 = second, etc.)
+        """
+        self.monitor_index = monitor_index
 
     def capture_window(self, window_id: Optional[str] = None) -> np.ndarray:
         """
