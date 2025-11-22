@@ -373,31 +373,6 @@ class TrayApplication:
                         'Commentary Frequency',
                         pystray.Menu(
                             Item(
-                                '100%',
-                                lambda _: self.set_commentary_frequency(1.0),
-                                checked=lambda item: abs(self.config.commentary_frequency - 1.0) < 0.01
-                            ),
-                            Item(
-                                '90%',
-                                lambda _: self.set_commentary_frequency(0.9),
-                                checked=lambda item: abs(self.config.commentary_frequency - 0.9) < 0.01
-                            ),
-                            Item(
-                                '80%',
-                                lambda _: self.set_commentary_frequency(0.8),
-                                checked=lambda item: abs(self.config.commentary_frequency - 0.8) < 0.01
-                            ),
-                            Item(
-                                '70%',
-                                lambda _: self.set_commentary_frequency(0.7),
-                                checked=lambda item: abs(self.config.commentary_frequency - 0.7) < 0.01
-                            ),
-                            Item(
-                                '60%',
-                                lambda _: self.set_commentary_frequency(0.6),
-                                checked=lambda item: abs(self.config.commentary_frequency - 0.6) < 0.01
-                            ),
-                            Item(
                                 '50%',
                                 lambda _: self.set_commentary_frequency(0.5),
                                 checked=lambda item: abs(self.config.commentary_frequency - 0.5) < 0.01
