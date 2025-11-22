@@ -363,6 +363,12 @@ class Monitor:
 
             print(f"\n[{timestamp.strftime('%H:%M:%S')}] Shot detected!")
 
+            # Check if this is an idle/non-gameplay screen first
+            is_idle = self.ai_analyzer.detect_idle_screen(screenshot)
+            if is_idle:
+                print("  Idle screen detected (menu/setup/complete) - skipping analysis to save costs")
+                return
+
             # Extract player name from screenshot every time (if name_frequency > 0)
             player_name = None
             if self.config.name_frequency > 0:

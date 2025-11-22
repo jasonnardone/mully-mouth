@@ -7,12 +7,16 @@ Usage:
    data/training/images/fairway/*.jpg
    data/training/images/green/*.jpg
    data/training/images/water/*.jpg
+   data/training/images/idle/*.jpg  (non-gameplay screens)
    etc.
 
 2. Run this script:
    python train_from_images.py
 
 3. AI will automatically use these examples in next session
+
+Note: Idle screens (setup, menus, round complete) help the AI recognize
+when to pause commentary and skip analysis to save API costs.
 """
 
 import io
@@ -58,6 +62,17 @@ def scan_training_images(images_dir: Path) -> Dict[str, List[str]]:
 
         if images:
             images_by_outcome[outcome.value] = [str(img) for img in images]
+
+    # Also scan for idle screen images (non-gameplay screens)
+    idle_dir = images_dir / "idle"
+    if idle_dir.exists():
+        images = []
+        for ext in valid_extensions:
+            images.extend(idle_dir.glob(f"*{ext}"))
+            images.extend(idle_dir.glob(f"*{ext.upper()}"))
+
+        if images:
+            images_by_outcome["idle"] = [str(img) for img in images]
 
     return images_by_outcome
 
@@ -131,6 +146,7 @@ def main():
         print("   data/training/images/fairway/shot1.jpg")
         print("   data/training/images/green/shot2.jpg")
         print("   data/training/images/water/shot3.jpg")
+        print("   data/training/images/idle/setup_screen.jpg  (non-gameplay)")
         print("   etc.")
         print("3. Run this script again")
         return

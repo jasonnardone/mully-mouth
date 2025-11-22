@@ -265,6 +265,86 @@ class AIAnalyzerService:
         except Exception as e:
             return None
 
+    def detect_idle_screen(self, screenshot: np.ndarray, training_examples: Optional[list] = None) -> bool:
+        """
+        Detect if screenshot shows a non-gameplay screen (setup, menus, round complete, etc.).
+
+        Uses pattern matching against training images in data/training/images/idle/
+        to identify screens where commentary should be paused.
+
+        Args:
+            screenshot: Screenshot to analyze
+            training_examples: Optional list of training examples for idle screens
+
+        Returns:
+            True if this is an idle/non-gameplay screen, False if it's gameplay
+        """
+        try:
+            # Resize screenshot to reduce tokens
+            from PIL import Image as PILImage
+            screenshot_img = PILImage.fromarray(screenshot.astype("uint8"), "RGB")
+            # Resize to max 800x600 for idle detection
+            screenshot_img = screenshot_img.resize(
+                (min(800, screenshot_img.width), min(600, screenshot_img.height)),
+                PILImage.Resampling.LANCZOS
+            )
+            resized_screenshot = np.array(screenshot_img)
+
+            # Convert to base64
+            image_data = self._encode_image(resized_screenshot)
+
+            # Build prompt with training examples if available
+            prompt = "Look at this golf simulator screen. Is this a GAMEPLAY screen showing an active golf shot, "
+            prompt += "or is it a NON-GAMEPLAY screen (setup menu, round complete, leaderboard, settings, course selection, etc.)?\n\n"
+
+            if training_examples:
+                prompt += "Here are examples of NON-GAMEPLAY screens to help you identify them:\n"
+                for i, example in enumerate(training_examples[:3], 1):
+                    prompt += f"Example {i}: {example.get('description', 'Non-gameplay screen')}\n"
+                prompt += "\n"
+
+            prompt += "Reply with ONLY 'GAMEPLAY' if this is an active shot/gameplay screen, or 'IDLE' if it's a menu/setup/complete screen."
+
+            # Call Claude Vision API
+            message = self.client.messages.create(
+                model=self.model,
+                max_tokens=10,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image",
+                                "source": {
+                                    "type": "base64",
+                                    "media_type": "image/jpeg",
+                                    "data": image_data,
+                                },
+                            },
+                            {
+                                "type": "text",
+                                "text": prompt,
+                            },
+                        ],
+                    }
+                ],
+            )
+
+            # Parse response
+            if not message.content:
+                return False  # Default to gameplay if uncertain
+
+            response = message.content[0].text.strip().upper()
+
+            # Return True if idle screen detected
+            return "IDLE" in response
+
+        except anthropic.APIError as e:
+            # On API error, default to gameplay (don't pause)
+            return False
+        except Exception as e:
+            return False
+
     def estimate_cost(self, screenshot: np.ndarray, few_shot_examples: Optional[list] = None) -> float:
         """
         Estimate API cost for analyzing this screenshot.
