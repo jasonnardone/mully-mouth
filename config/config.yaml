@@ -26,6 +26,6 @@ monitoring:
   monitor_index: 0
   motion_threshold: 0.02
 name_frequency: 0.3
-personality: Jerk
+personality: Sarcastic
 training:
   images_dir: data/training/images

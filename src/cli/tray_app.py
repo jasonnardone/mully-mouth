@@ -342,7 +342,7 @@ class TrayApplication:
                         Item(
                             p.title(),
                             lambda _, p=p: self.change_personality(p),
-                            checked=lambda item, p=p: self.config.personality.lower() == p.lower()
+                            checked=lambda item, p=p: str(self.config.personality).lower() == p.lower()
                         )
                         for p in self._get_personalities()
                     ]
