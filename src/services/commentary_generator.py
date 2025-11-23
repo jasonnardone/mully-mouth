@@ -81,7 +81,7 @@ class CommentaryGeneratorService:
             # System prompt is cached across requests
             message = self.client.messages.create(
                 model=self.model,
-                max_tokens=150,
+                max_tokens=75,  # Reduced from 150 for shorter, punchier commentary
                 system=[
                     {
                         "type": "text",
@@ -154,7 +154,7 @@ class CommentaryGeneratorService:
             # Call Claude API
             message = self.client.messages.create(
                 model=self.model,
-                max_tokens=150,
+                max_tokens=75,  # Reduced from 150 for shorter, punchier commentary
                 system=[
                     {
                         "type": "text",
