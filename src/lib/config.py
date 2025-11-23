@@ -24,6 +24,7 @@ class ElevenlabsConfig:
     model: str = "eleven_turbo_v2_5"
     stability: float = 0.5
     similarity_boost: float = 0.75
+    volume_boost: float = 0.0  # Volume boost in dB (0.0 = normal, 10.0 = louder, 20.0 = loudest)
 
 
 @dataclass
@@ -129,6 +130,7 @@ class Config:
     personality: str = "neutral"
     commentary_frequency: float = 0.7
     name_frequency: float = 0.3
+    volume_boost: float = 0.0  # Volume boost in dB
     hotkeys: HotkeyConfig = None
     monitoring: MonitoringConfig = None
     ai: AIConfig = None
@@ -280,6 +282,7 @@ def load_config(config_path: Optional[str] = None) -> Config:
         personality=data.get("personality", "neutral"),
         commentary_frequency=data.get("commentary_frequency", 0.7),
         name_frequency=data.get("name_frequency", 0.3),
+        volume_boost=data.get("volume_boost", 0.0),
         hotkeys=hotkeys_config,
         monitoring=monitoring_config,
         ai=ai_config,

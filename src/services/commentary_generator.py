@@ -1,4 +1,5 @@
 """Commentary generator service for personality-driven shot commentary."""
+import re
 import random
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -102,6 +103,9 @@ class CommentaryGeneratorService:
 
             commentary = message.content[0].text.strip()
 
+            # Remove any text surrounded by asterisks (actions/stage directions)
+            commentary = self._strip_asterisk_actions(commentary)
+
             # Ensure it's concise (1-2 sentences)
             sentences = commentary.split(". ")
             if len(sentences) > 2:
@@ -171,6 +175,9 @@ class CommentaryGeneratorService:
                 raise CommentaryError("Empty response from Claude API")
 
             commentary = message.content[0].text.strip()
+
+            # Remove any text surrounded by asterisks (actions/stage directions)
+            commentary = self._strip_asterisk_actions(commentary)
 
             # Ensure it's concise (1-2 sentences)
             sentences = commentary.split(". ")
@@ -320,6 +327,35 @@ class CommentaryGeneratorService:
         prompt += "\n\nIMPORTANT: Do NOT censor or edit any profanity or swear words. Write them in full without asterisks (*) or other replacements. They need to be pronounced correctly by text-to-speech."
 
         return prompt
+
+    def _strip_asterisk_actions(self, text: str) -> str:
+        """
+        Remove text surrounded by asterisks (stage directions/actions).
+
+        Examples:
+            "*stares intensely* That was terrible" -> "That was terrible"
+            "Nice shot *grins*" -> "Nice shot"
+            "*laughs* What was that? *shakes head*" -> "What was that?"
+
+        Args:
+            text: Commentary text that may contain asterisk actions
+
+        Returns:
+            Text with asterisk actions removed and cleaned up
+        """
+        # Remove text between asterisks (including the asterisks)
+        text = re.sub(r'\*[^*]*\*', '', text)
+
+        # Clean up multiple spaces
+        text = re.sub(r'\s+', ' ', text)
+
+        # Clean up spaces before punctuation
+        text = re.sub(r'\s+([.,!?])', r'\1', text)
+
+        # Remove leading/trailing whitespace
+        text = text.strip()
+
+        return text
 
     def _generate_fallback_commentary(self, outcome: Outcome) -> str:
         """

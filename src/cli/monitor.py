@@ -249,6 +249,7 @@ class Monitor:
             model=self.config.elevenlabs.model,
             stability=self.config.elevenlabs.stability,
             similarity_boost=self.config.elevenlabs.similarity_boost,
+            volume_boost=self.config.volume_boost,
         )
 
         # Learning service

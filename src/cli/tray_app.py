@@ -208,6 +208,31 @@ class TrayApplication:
         if self.icon:
             self.icon.menu = self._create_menu()
 
+    def set_volume_boost(self, boost: float) -> None:
+        """
+        Set volume boost level.
+
+        Args:
+            boost: Volume boost in dB (0.0 = normal, 10.0 = louder, 20.0 = loudest)
+        """
+        # Update config first
+        self.config.volume_boost = boost
+
+        # If monitor is running, update voice service volume
+        if self.monitor and hasattr(self.monitor, 'voice_service'):
+            self.monitor.voice_service.volume_boost = boost
+
+        # Save config to file
+        self._save_config()
+
+        # Show confirmation based on level
+        level_name = "Normal" if boost == 0.0 else "Louder" if boost == 10.0 else "Loudest"
+        print(f"Volume set to {level_name} (+{boost:.0f} dB)")
+
+        # Update menu to show new checkmark
+        if self.icon:
+            self.icon.menu = self._create_menu()
+
     def set_monitor(self, monitor_index: int) -> None:
         """
         Set which monitor to capture.
@@ -215,28 +240,36 @@ class TrayApplication:
         Args:
             monitor_index: Monitor index (0 = primary, 1 = second, etc.)
         """
-        was_running = self.monitor and self.monitor.is_running
+        try:
+            was_running = self.monitor and self.monitor.is_running
 
-        # Stop monitoring if running
-        if was_running:
-            self.stop_monitoring()
+            # Stop monitoring if running
+            if was_running:
+                self.stop_monitoring()
 
-        # Update config
-        self.config.monitoring.monitor_index = monitor_index
+            # Update config
+            self.config.monitoring.monitor_index = monitor_index
 
-        # Save config to file
-        self._save_config()
+            # Save config to file
+            self._save_config()
 
-        # Show confirmation
-        print(f"Monitor set to Monitor {monitor_index + 1}")
+            # Show confirmation
+            print(f"Monitor set to Monitor {monitor_index + 1}")
 
-        # Restart if was running
-        if was_running:
-            self.start_monitoring()
+            # Restart if was running
+            if was_running:
+                self.start_monitoring()
 
-        # Update menu to show new checkmark
-        if self.icon:
-            self.icon.menu = self._create_menu()
+            # Update menu to show new checkmark
+            if self.icon:
+                self.icon.menu = self._create_menu()
+
+        except Exception as e:
+            self._show_error(f"Failed to switch monitor: {e}")
+            # Ensure icon is updated even on error
+            if self.icon:
+                self.icon.icon = self._create_icon(active=False)
+                self.icon.menu = self._create_menu()
 
     def show_stats(self, icon=None, item=None) -> None:
         """Show session statistics in message box."""
@@ -465,6 +498,27 @@ class TrayApplication:
                             ),
                         )
                     ),
+                    # Volume Boost
+                    Item(
+                        'Volume Level',
+                        pystray.Menu(
+                            Item(
+                                'Normal',
+                                lambda _: self.set_volume_boost(0.0),
+                                checked=lambda item: abs(self.config.volume_boost - 0.0) < 0.1
+                            ),
+                            Item(
+                                'Louder',
+                                lambda _: self.set_volume_boost(10.0),
+                                checked=lambda item: abs(self.config.volume_boost - 10.0) < 0.1
+                            ),
+                            Item(
+                                'Loudest',
+                                lambda _: self.set_volume_boost(20.0),
+                                checked=lambda item: abs(self.config.volume_boost - 20.0) < 0.1
+                            ),
+                        )
+                    ),
                 )
             ),
 
@@ -546,9 +600,18 @@ class TrayApplication:
         Returns:
             List of monitor info dicts
         """
-        from src.services.screen_capture import ScreenCaptureService
-        temp_capture = ScreenCaptureService()
-        return temp_capture.get_available_monitors()
+        try:
+            from src.services.screen_capture import ScreenCaptureService
+            temp_capture = ScreenCaptureService(monitor_index=0)
+            monitors = temp_capture.get_available_monitors()
+            # If no monitors found, return at least the primary monitor
+            if not monitors:
+                return [{"index": 0, "width": 1920, "height": 1080, "left": 0, "top": 0}]
+            return monitors
+        except Exception as e:
+            print(f"Error getting monitors: {e}")
+            # Return primary monitor as fallback
+            return [{"index": 0, "width": 1920, "height": 1080, "left": 0, "top": 0}]
 
     def _save_config(self) -> None:
         """Save current config to file."""
@@ -565,6 +628,7 @@ class TrayApplication:
             config_data['personality'] = str(self.config.personality)
             config_data['commentary_frequency'] = float(self.config.commentary_frequency)
             config_data['name_frequency'] = float(self.config.name_frequency)
+            config_data['volume_boost'] = float(self.config.volume_boost)
 
             # Update monitoring config
             if 'monitoring' not in config_data:

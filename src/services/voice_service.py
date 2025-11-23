@@ -1,4 +1,6 @@
 """Voice service for text-to-speech using ElevenLabs API."""
+import io
+import sys
 import threading
 from typing import Optional
 
@@ -7,6 +9,18 @@ from elevenlabs.client import ElevenLabs
 from elevenlabs.play import play
 
 from src.lib.exceptions import VoiceServiceError
+
+# Platform-specific volume control
+if sys.platform == 'win32':
+    try:
+        from ctypes import cast, POINTER
+        from comtypes import CLSCTX_ALL
+        from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+        WINDOWS_VOLUME_AVAILABLE = True
+    except ImportError:
+        WINDOWS_VOLUME_AVAILABLE = False
+else:
+    WINDOWS_VOLUME_AVAILABLE = False
 
 
 class VoiceService:
@@ -20,9 +34,10 @@ class VoiceService:
         self,
         api_key: str,
         voice_id: str = "21m00Tcm4TlvDq8ikWAM",  # Default: Rachel voice
-        model: str = "eleven_turbo_v2_5",  # Turbo v2.5 (free tier compatible)
+        model: str = "eleven_flash_v2_5",  # eleven_turbo_v2_5
         stability: float = 0.5,
         similarity_boost: float = 0.75,
+        volume_boost: float = 0.0,  # Volume boost in dB
     ):
         """
         Initialize voice service.
@@ -33,6 +48,7 @@ class VoiceService:
             model: TTS model to use
             stability: Voice stability (0.0-1.0)
             similarity_boost: Voice similarity boost (0.0-1.0)
+            volume_boost: Volume boost in dB (0.0 = normal, 10.0 = louder, 20.0 = loudest)
         """
         self.client = ElevenLabs(api_key=api_key)
         self.voice_id = voice_id
@@ -41,6 +57,7 @@ class VoiceService:
             stability=stability,
             similarity_boost=similarity_boost,
         )
+        self.volume_boost = volume_boost
         self.current_thread: Optional[threading.Thread] = None
         self.is_speaking = False
         self.should_stop = False
@@ -221,6 +238,64 @@ class VoiceService:
             similarity_boost=similarity_boost,
         )
 
+    def _set_system_volume(self, boost_db: float) -> Optional[float]:
+        """
+        Temporarily boost system volume (Windows only).
+
+        Args:
+            boost_db: Boost in dB (0, 10, or 20)
+
+        Returns:
+            Previous volume level (0.0-1.0) or None if not available
+        """
+        if not WINDOWS_VOLUME_AVAILABLE or boost_db == 0.0:
+            return None
+
+        try:
+            devices = AudioUtilities.GetSpeakers()
+            interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+            volume = cast(interface, POINTER(IAudioEndpointVolume))
+
+            # Get current volume
+            current_volume = volume.GetMasterVolumeLevelScalar()
+
+            # Calculate boost multiplier
+            # 10 dB ≈ 3.16x, 20 dB ≈ 10x
+            # But we're limited to 0.0-1.0 range
+            if boost_db == 10.0:
+                boost_multiplier = 1.5  # 50% louder
+            elif boost_db == 20.0:
+                boost_multiplier = 2.0  # 100% louder (2x)
+            else:
+                boost_multiplier = 1.0
+
+            # Apply boost, clamped to 1.0 max
+            new_volume = min(1.0, current_volume * boost_multiplier)
+            volume.SetMasterVolumeLevelScalar(new_volume, None)
+
+            return current_volume
+
+        except Exception:
+            return None
+
+    def _restore_system_volume(self, previous_volume: Optional[float]) -> None:
+        """
+        Restore previous system volume.
+
+        Args:
+            previous_volume: Previous volume level to restore
+        """
+        if not WINDOWS_VOLUME_AVAILABLE or previous_volume is None:
+            return
+
+        try:
+            devices = AudioUtilities.GetSpeakers()
+            interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+            volume = cast(interface, POINTER(IAudioEndpointVolume))
+            volume.SetMasterVolumeLevelScalar(previous_volume, None)
+        except Exception:
+            pass
+
     def _speak_sync(self, text: str) -> None:
         """
         Synchronous speech (internal helper).
@@ -231,8 +306,12 @@ class VoiceService:
         Raises:
             VoiceServiceError: If TTS fails
         """
+        previous_volume = None
         try:
             self.is_speaking = True
+
+            # Boost system volume temporarily if requested
+            previous_volume = self._set_system_volume(self.volume_boost)
 
             audio = self.client.text_to_speech.convert(
                 text=text,
@@ -244,9 +323,14 @@ class VoiceService:
             # Play audio using ElevenLabs play function
             play(audio)
 
+            # Restore volume
+            self._restore_system_volume(previous_volume)
+
             self.is_speaking = False
 
         except Exception as e:
+            # Restore volume even on error
+            self._restore_system_volume(previous_volume)
             self.is_speaking = False
 
             # Check for quota exceeded error
