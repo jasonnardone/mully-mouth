@@ -61,16 +61,54 @@ class MotionDetectorService:
         total_pixels = frame.shape[0] * frame.shape[1]
         motion_ratio = motion_pixels / total_pixels
 
+        # Analyze motion direction to distinguish aiming from actual shots
+        is_vertical_motion = self._is_primarily_vertical_motion(thresh)
+
         # Update previous frame
         self.previous_frame = frame.copy()
 
-        # Detect motion
-        if motion_ratio > self.threshold:
+        # Detect motion only if it's primarily vertical (actual shot)
+        # Horizontal motion (aiming left/right) is ignored
+        if motion_ratio > self.threshold and is_vertical_motion:
             self.motion_detected = True
             self.last_motion_time = time.time()
             return True
         else:
             return False
+
+    def _is_primarily_vertical_motion(self, thresh: np.ndarray) -> bool:
+        """
+        Determine if motion is primarily vertical (shot) vs horizontal (aiming).
+
+        Args:
+            thresh: Thresholded difference image
+
+        Returns:
+            True if motion is primarily vertical, False for horizontal
+        """
+        height, width = thresh.shape
+
+        # Sum motion pixels in each row (vertical motion indicator)
+        vertical_motion = np.sum(thresh, axis=1)
+
+        # Sum motion pixels in each column (horizontal motion indicator)
+        horizontal_motion = np.sum(thresh, axis=0)
+
+        # Calculate variance to determine dominant motion direction
+        # Higher variance means motion is concentrated in certain areas
+        vertical_variance = np.var(vertical_motion)
+        horizontal_variance = np.var(horizontal_motion)
+
+        # If vertical variance is significantly higher, it's a shot
+        # If horizontal variance is higher, it's aiming adjustment
+        # Use ratio of 1.5 as threshold for "primarily vertical"
+        if vertical_variance == 0 and horizontal_variance == 0:
+            return False
+
+        variance_ratio = vertical_variance / (horizontal_variance + 1e-10)
+
+        # Primarily vertical if variance ratio > 1.5
+        return variance_ratio > 1.5
 
     def is_ball_stopped(self) -> bool:
         """
