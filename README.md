@@ -1,6 +1,6 @@
-# Mully Mouth Golf Caddy v3.0.0
+# Mully Mouth Golf Caddy v3.1.0
 
-AI-powered golf shot narration for GS Pro simulator using Claude Vision and ElevenLabs text-to-speech.
+AI-powered golf shot narration for GS Pro simulator using Claude Vision and xAI Grok TTS.
 
 ## Features
 
@@ -11,8 +11,8 @@ AI-powered golf shot narration for GS Pro simulator using Claude Vision and Elev
 - **Score Achievement Detection**: Recognizes and celebrates Birdies, Eagles, Pars, etc.
 - **Player Name Recognition**: Extracts and mentions player names in commentary
 - **Multiple Personalities**: Choose from Neutral, Sarcastic, Encouraging, or Jerk commentary styles
-- **Voice Narration**: Natural speech synthesis using ElevenLabs
-- **Personality-Specific Voices**: Each personality can have its own unique voice
+- **Voice Narration**: Natural speech synthesis using xAI Grok TTS (~$0.35/round)
+- **Personality-Specific Voices**: Each personality has its own mapped Grok voice (leo/rex/ara/eve/sal)
 - **Live Settings Adjustment**: Change commentary frequency, name frequency, and personality without restarting
 - **Cost Optimization**: Pattern cache reduces AI API calls by 70-80%
 - **Learning System**: Train AI with custom screenshots for improved accuracy
@@ -23,8 +23,8 @@ AI-powered golf shot narration for GS Pro simulator using Claude Vision and Elev
 
 - Python 3.11 or higher
 - GS Pro golf simulator
-- Anthropic API key (Claude)
-- ElevenLabs API key
+- Anthropic API key (Claude) — console.anthropic.com
+- xAI API key (Grok TTS) — console.x.ai
 
 ### Installation
 
@@ -46,14 +46,14 @@ pip install -r requirements.txt
 python setup_wizard.py
 ```
 The wizard will:
-- Guide you through entering your Anthropic and ElevenLabs API keys
+- Guide you through entering your Anthropic and xAI API keys
 - Store them securely in Windows Credential Manager (encrypted by Windows)
 - Set up your configuration with sensible defaults
 - Never save API keys in plain text files
 
 **Alternative Methods:**
 
-- **Environment Variables**: Set `ANTHROPIC_API_KEY` and `ELEVENLABS_API_KEY` in Windows System Environment Variables
+- **Environment Variables**: Set `ANTHROPIC_API_KEY` and `XAI_API_KEY` in Windows System Environment Variables
 - **Config File**: Copy `config/config.yaml.template` to `config/config.yaml` and edit (not recommended for public repos)
 
 ### Usage
@@ -106,7 +106,7 @@ python -m src.cli.main --config path/to/config.yaml
 - **Encouraging**: Supportive, motivational, always positive
 - **Jerk**: Brutally honest, snarky, and harsh (for those who like a challenge!)
 
-Each personality can have its own unique ElevenLabs voice - see [VOICE_CONFIGURATION_GUIDE.md](VOICE_CONFIGURATION_GUIDE.md) for setup.
+Each personality has a pre-mapped Grok voice — see [VOICE_CONFIGURATION_GUIDE.md](VOICE_CONFIGURATION_GUIDE.md) for details and customization.
 
 ## Configuration
 
@@ -119,7 +119,7 @@ For advanced configuration, edit `config/config.yaml`:
 - AI models (Claude Sonnet, Haiku, etc.)
 - Motion detection sensitivity
 - Cache settings
-- Voice settings per personality (voice ID, stability, similarity)
+- Voice per personality (voice_id: leo/rex/ara/eve/sal)
 - Cost limits and warnings
 - Monitoring FPS and thresholds
 
@@ -128,9 +128,9 @@ For advanced configuration, edit `config/config.yaml`:
 ## Cost Estimates
 
 - AI shot analysis: ~$0.002-0.004 per shot
-- Commentary generation: ~$0.0008 per shot
-- Voice synthesis: ~$0.01-0.02 per shot
-- **Total per round (18 holes, ~70 shots)**: ~$1.00-2.00
+- Commentary generation: ~$0.0016 per shot
+- Voice synthesis (Grok TTS): ~$0.0008 per shot
+- **Total per round (18 holes, ~80 shots, full settings)**: ~$0.35
 
 Pattern caching reduces AI costs by 70-80% for similar shots.
 
@@ -161,7 +161,7 @@ The system follows a service-oriented architecture:
 3. **PatternCacheService**: Caches screenshot patterns using perceptual hashing
 4. **AIAnalyzerService**: Analyzes shots using Claude Vision API
 5. **CommentaryGeneratorService**: Generates personality-driven commentary
-6. **VoiceService**: Converts commentary to speech via ElevenLabs
+6. **VoiceService**: Converts commentary to speech via xAI Grok TTS
 7. **Monitor**: Orchestrates all services in main loop
 
 ## Development
@@ -206,8 +206,8 @@ example_phrases:
 
 ### API key errors when launching
 - Run `python setup_wizard.py` to configure API keys securely
-- Or set environment variables: `ANTHROPIC_API_KEY` and `ELEVENLABS_API_KEY`
-- Verify keys are valid at console.anthropic.com and elevenlabs.io
+- Or set environment variables: `ANTHROPIC_API_KEY` and `XAI_API_KEY`
+- Verify keys are valid at console.anthropic.com and console.x.ai
 
 ### Stop Monitoring doesn't stop commentary
 - The system waits for any in-progress shot to complete (up to 10 seconds)
@@ -239,6 +239,6 @@ Contributions welcome! Please open an issue or pull request.
 ## Acknowledgments
 
 - Built with Claude (Anthropic)
-- Voice synthesis by ElevenLabs
+- Voice synthesis by xAI Grok TTS
 - Screen capture via MSS library
 - Motion detection using OpenCV

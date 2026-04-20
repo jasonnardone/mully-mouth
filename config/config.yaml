@@ -6,13 +6,11 @@ cache:
   pattern_cache_file: data/cache/pattern_cache.json
 commentary_frequency: 0.5
 cost:
-  max_cost_per_round: 5.0
-  warn_at_cost: 3.0
-elevenlabs:
-  model: eleven_turbo_v2_5
-  similarity_boost: 0.75
-  stability: 0.5
-  voice_id: NOpBlnGInO9m6vDvFkFC
+  max_cost_per_round: 2.0
+  warn_at_cost: 1.5
+grok_tts:
+  model: grok-tts-preview
+  voice_id: leo
 hotkeys:
   correction_mode: null
   force_analyze: null

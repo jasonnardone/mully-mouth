@@ -33,8 +33,8 @@ def main() -> int:
         print_header("Step 1: API Keys")
 
         print("You need two API keys to use Mully Mouth:")
-        print("  1. Anthropic API key (for Claude AI)")
-        print("  2. ElevenLabs API key (for voice synthesis)\n")
+        print("  1. Anthropic API key (for Claude AI shot analysis & commentary)")
+        print("  2. xAI API key (for Grok TTS voice synthesis)\n")
 
         print("Get your Anthropic API key at: https://console.anthropic.com/")
         anthropic_key = get_input("Enter your Anthropic API key")
@@ -43,27 +43,35 @@ def main() -> int:
             print("\nError: Anthropic API key is required.")
             return 1
 
-        print("\nGet your ElevenLabs API key at: https://elevenlabs.io/")
-        elevenlabs_key = get_input("Enter your ElevenLabs API key")
+        print("\nGet your xAI API key at: https://console.x.ai/")
+        xai_key = get_input("Enter your xAI API key")
 
-        if not elevenlabs_key:
-            print("\nError: ElevenLabs API key is required.")
+        if not xai_key:
+            print("\nError: xAI API key is required.")
             return 1
 
         # Step 2: Personality
         print_header("Step 2: Commentary Personality")
 
         print("Available personalities:")
-        print("  1. neutral - Professional, informative")
-        print("  2. sarcastic - Humorous, light-hearted ribbing")
-        print("  3. encouraging - Supportive, motivational\n")
+        print("  1. neutral      - Professional, informative (voice: leo)")
+        print("  2. sarcastic    - Humorous, light-hearted ribbing (voice: eve)")
+        print("  3. encouraging  - Supportive, motivational (voice: ara)")
+        print("  4. jerk         - Brutally honest and profane (voice: rex)")
+        print("  5. documentary  - Sir David Attenborough style (voice: leo)")
+        print("  6. ex-girlfriend - Your unstable ex (voice: eve)")
+        print("  7. unhinged     - Completely insane (voice: sal)\n")
 
-        personality_choice = get_input("Choose personality (1-3)", "1")
+        personality_choice = get_input("Choose personality (1-7)", "1")
 
         personality_map = {
             "1": "neutral",
             "2": "sarcastic",
             "3": "encouraging",
+            "4": "jerk",
+            "5": "documentary",
+            "6": "ex-girlfriend",
+            "7": "unhinged",
         }
 
         personality = personality_map.get(personality_choice, "neutral")
@@ -71,19 +79,26 @@ def main() -> int:
         # Step 3: Voice Settings (optional)
         print_header("Step 3: Voice Settings (Optional)")
 
-        print("You can customize voice settings or use defaults.")
-        print("Default voice: Rachel (ElevenLabs ID: 21m00Tcm4TlvDq8ikWAM)\n")
+        voice_defaults = {
+            "neutral": "leo",
+            "sarcastic": "eve",
+            "encouraging": "ara",
+            "jerk": "rex",
+            "documentary": "leo",
+            "ex-girlfriend": "eve",
+            "unhinged": "sal",
+        }
 
-        use_custom_voice = get_input("Customize voice settings? (y/n)", "n").lower()
+        default_voice = voice_defaults.get(personality, "leo")
+        print(f"Default voice for '{personality}': {default_voice}")
+        print("Available voices: leo (authoritative male), rex (confident male),")
+        print("                  ara (warm female), eve (energetic female), sal (neutral)\n")
 
-        voice_id = "NOpBlnGInO9m6vDvFkFC"  # Default
-        stability = "0.5"
-        similarity = "0.75"
+        use_custom_voice = get_input("Customize voice? (y/n)", "n").lower()
+        voice_id = default_voice
 
         if use_custom_voice == "y":
-            voice_id = get_input("Voice ID", voice_id)
-            stability = get_input("Stability (0.0-1.0)", stability)
-            similarity = get_input("Similarity boost (0.0-1.0)", similarity)
+            voice_id = get_input("Voice ID (leo/rex/ara/eve/sal)", default_voice)
 
         # Step 4: Motion Detection (optional)
         print_header("Step 4: Motion Detection (Optional)")
@@ -110,18 +125,21 @@ def main() -> int:
 # Anthropic (Claude AI) Configuration
 anthropic:
   api_key: {anthropic_key}
-  model: claude-sonnet-4-5
+  model: claude-3-5-haiku-latest
 
-# ElevenLabs (Voice) Configuration
-elevenlabs:
-  api_key: {elevenlabs_key}
+# xAI Grok TTS (Voice) Configuration
+# Pricing: $4.20/1M characters (~$0.35/round at full settings)
+grok_tts:
+  api_key: {xai_key}
   voice_id: {voice_id}
-  model: eleven_turbo_v2_5
-  stability: {stability}
-  similarity_boost: {similarity}
+  model: grok-tts-preview
 
 # Commentary Personality
 personality: {personality}
+
+# Commentary Settings
+commentary_frequency: 0.7
+name_frequency: 0.3
 
 # Monitoring Settings
 monitoring:
@@ -137,8 +155,8 @@ cache:
 
 # Cost Limits
 cost:
-  max_cost_per_round: 5.0
-  warn_at_cost: 3.0
+  max_cost_per_round: 2.0
+  warn_at_cost: 1.5
 
 # Logging
 logging:
@@ -179,12 +197,13 @@ hotkeys:
         print_header("Setup Complete!")
 
         print("Mully Mouth is now configured and ready to use.")
+        print(f"\nVoice: {voice_id} | Personality: {personality}")
         print("\nTo start using Mully Mouth:")
         print("  1. Launch GS Pro")
-        print(f"  2. Run: python -m src.cli.main")
-        print(f"  3. Play golf - commentary will be generated automatically\n")
+        print("  2. Double-click mully-mouth.bat (or run: python -m src.cli.main)")
+        print("  3. Play golf - commentary will be generated automatically\n")
 
-        print("For more options, run: python -m src.cli.main --help\n")
+        print("Cost estimate: ~$0.35/round at full settings (vs ~$6-7 with ElevenLabs)\n")
 
         return 0
 

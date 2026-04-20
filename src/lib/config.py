@@ -16,15 +16,13 @@ class AnthropicConfig:
 
 
 @dataclass
-class ElevenlabsConfig:
-    """ElevenLabs API configuration."""
+class GrokTTSConfig:
+    """xAI Grok TTS configuration."""
 
-    api_key: str
-    voice_id: str = "Antoni"
-    model: str = "eleven_turbo_v2_5"
-    stability: float = 0.5
-    similarity_boost: float = 0.75
-    volume_boost: float = 0.0  # Volume boost in dB (0.0 = normal, 10.0 = louder, 20.0 = loudest)
+    api_key: str = ""
+    voice_id: str = "leo"
+    model: str = "grok-tts-preview"
+    volume_boost: float = 0.0
 
 
 @dataclass
@@ -106,7 +104,6 @@ class CostConfig:
         if self.budget_per_round is None:
             self.budget_per_round = self.max_cost_per_round
         if self.warn_at_percentage is None:
-            # Calculate percentage from absolute values
             if self.max_cost_per_round > 0:
                 self.warn_at_percentage = self.warn_at_cost / self.max_cost_per_round
             else:
@@ -126,11 +123,11 @@ class Config:
     """Main application configuration."""
 
     anthropic: AnthropicConfig
-    elevenlabs: ElevenlabsConfig
+    voice: GrokTTSConfig
     personality: str = "neutral"
     commentary_frequency: float = 0.7
     name_frequency: float = 0.3
-    volume_boost: float = 0.0  # Volume boost in dB
+    volume_boost: float = 0.0
     hotkeys: HotkeyConfig = None
     monitoring: MonitoringConfig = None
     ai: AIConfig = None
@@ -155,17 +152,8 @@ class Config:
 
 
 def _expand_env_vars(value: Any) -> Any:
-    """
-    Recursively expand environment variables in config values.
-
-    Args:
-        value: Config value (str, dict, list, or other)
-
-    Returns:
-        Value with environment variables expanded
-    """
+    """Recursively expand environment variables in config values."""
     if isinstance(value, str):
-        # Handle ${VAR} syntax
         if value.startswith("${") and value.endswith("}"):
             var_name = value[2:-1]
             return os.environ.get(var_name, "")
@@ -183,7 +171,7 @@ def load_config(config_path: Optional[str] = None) -> Config:
 
     API keys are loaded in this priority order:
     1. Securely stored credentials (Windows Credential Manager)
-    2. Environment variables (ANTHROPIC_API_KEY, ELEVENLABS_API_KEY)
+    2. Environment variables (ANTHROPIC_API_KEY, XAI_API_KEY)
     3. Config file values
 
     Args:
@@ -210,24 +198,21 @@ def load_config(config_path: Optional[str] = None) -> Config:
     with open(path, "r") as f:
         data = yaml.safe_load(f)
 
-    # Expand environment variables
     data = _expand_env_vars(data)
 
     # Try to load from secure credential store first
     try:
         from src.lib.credentials import CredentialsManager
         creds = CredentialsManager()
-
-        # Priority 1: Stored credentials
         stored_anthropic = creds.get_anthropic_key()
-        stored_elevenlabs = creds.get_elevenlabs_key()
+        stored_xai = creds.get_xai_key()
     except Exception:
         stored_anthropic = None
-        stored_elevenlabs = None
+        stored_xai = None
 
     # Priority 2: Environment variables
     env_anthropic = os.environ.get("ANTHROPIC_API_KEY")
-    env_elevenlabs = os.environ.get("ELEVENLABS_API_KEY")
+    env_xai = os.environ.get("XAI_API_KEY")
 
     # Apply in priority order: stored > env > config file
     anthropic_key = stored_anthropic or env_anthropic
@@ -236,11 +221,15 @@ def load_config(config_path: Optional[str] = None) -> Config:
             data["anthropic"] = {}
         data["anthropic"]["api_key"] = anthropic_key
 
-    elevenlabs_key = stored_elevenlabs or env_elevenlabs
-    if elevenlabs_key:
-        if "elevenlabs" not in data:
-            data["elevenlabs"] = {}
-        data["elevenlabs"]["api_key"] = elevenlabs_key
+    xai_key = stored_xai or env_xai
+    if xai_key:
+        if "grok_tts" not in data:
+            data["grok_tts"] = {}
+        data["grok_tts"]["api_key"] = xai_key
+
+    # Handle legacy elevenlabs config key for migration
+    if "elevenlabs" in data and "grok_tts" not in data:
+        data["grok_tts"] = {}
 
     # Parse AI config first to potentially use its model
     ai_config = None
@@ -249,12 +238,15 @@ def load_config(config_path: Optional[str] = None) -> Config:
 
     # Parse nested configs
     anthropic_data = data.get("anthropic", {})
-    # If model is in AI config but not in anthropic, use AI model
     if ai_config and "model" not in anthropic_data:
         anthropic_data["model"] = ai_config.model
     anthropic_config = AnthropicConfig(**anthropic_data)
 
-    elevenlabs_config = ElevenlabsConfig(**data.get("elevenlabs", {}))
+    # Filter to only known GrokTTSConfig fields
+    grok_fields = {"api_key", "voice_id", "model", "volume_boost"}
+    raw_grok = data.get("grok_tts", {})
+    grok_data = {k: v for k, v in raw_grok.items() if k in grok_fields}
+    voice_config = GrokTTSConfig(**grok_data)
 
     hotkeys_config = None
     if "hotkeys" in data:
@@ -278,7 +270,7 @@ def load_config(config_path: Optional[str] = None) -> Config:
 
     return Config(
         anthropic=anthropic_config,
-        elevenlabs=elevenlabs_config,
+        voice=voice_config,
         personality=data.get("personality", "neutral"),
         commentary_frequency=data.get("commentary_frequency", 0.7),
         name_frequency=data.get("name_frequency", 0.3),

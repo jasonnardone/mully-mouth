@@ -49,10 +49,10 @@ All 106 tasks across 7 phases have been implemented:
    - Support for 3+ personalities
 
 6. **VoiceService** (`src/services/voice_service.py`)
-   - ElevenLabs text-to-speech integration
-   - Streaming audio for low latency
+   - xAI Grok TTS integration ($4.20/1M chars — ~$0.08/round)
+   - pygame-based audio playback
    - Non-blocking background speech
-   - Configurable voice settings
+   - 5 voices: leo, rex, ara, eve, sal (mapped per personality)
 
 7. **LearningService** (`src/services/learning_service.py`)
    - User correction tracking
@@ -114,10 +114,10 @@ All 106 tasks across 7 phases have been implemented:
 - Concise 1-2 sentence format
 
 ### 5. Voice Narration
-- ElevenLabs streaming TTS
-- Non-blocking background playback
-- Configurable voice (default: Rachel)
-- Adjustable stability and similarity boost
+- xAI Grok TTS (5 voices: leo, rex, ara, eve, sal)
+- pygame-based non-blocking playback
+- Per-personality voice mapping (male/female preserved)
+- $4.20/1M chars — ~$0.08/round vs ~$6/round with ElevenLabs
 
 ### 6. Active Learning
 - User correction interface
@@ -187,20 +187,18 @@ mully-mouth/
 
 ### API Keys Required
 - `ANTHROPIC_API_KEY` - Claude AI
-- `ELEVENLABS_API_KEY` - Voice synthesis
+- `XAI_API_KEY` - Grok TTS voice synthesis (console.x.ai)
 
 ### Configuration File (`config/config.yaml`)
 ```yaml
 anthropic:
   api_key: ${ANTHROPIC_API_KEY}
-  model: claude-3-5-sonnet-20241022
+  model: claude-3-5-haiku-latest
 
-elevenlabs:
-  api_key: ${ELEVENLABS_API_KEY}
-  voice_id: 21m00Tcm4TlvDq8ikWAM
-  model: eleven_monolingual_v1
-  stability: 0.5
-  similarity_boost: 0.75
+grok_tts:
+  api_key: ${XAI_API_KEY}
+  voice_id: leo
+  model: grok-tts-preview
 
 personality: neutral
 
@@ -267,7 +265,8 @@ pytest --cov=src tests/  # With coverage
 
 ### Core
 - **anthropic** (>=0.7.0) - Claude AI SDK
-- **elevenlabs** (>=0.2.0) - Text-to-speech
+- **openai** (>=1.0.0) - xAI Grok TTS (OpenAI-compatible client)
+- **pygame** (>=2.5.0) - Audio playback
 - **opencv-python** (>=4.8.0) - Computer vision
 - **mss** (>=9.0.0) - Screen capture
 - **pygetwindow** (>=0.0.9) - Window detection
@@ -293,13 +292,12 @@ pytest --cov=src tests/  # With coverage
 - Commentary generation: ~500ms
 - Voice synthesis: ~1 second (streaming)
 
-### Cost per Round (18 holes, ~70 shots)
-- Without cache: ~$2.50-3.50
-- With cache (70% hit rate): ~$1.00-2.00
+### Cost per Round (18 holes, ~80 shots, full settings)
+- With cache (70% hit rate): ~$0.35/round
 - Breakdown:
   - AI shot analysis: $0.002-0.004 per shot
-  - Commentary: $0.0008 per shot
-  - Voice: $0.01-0.02 per shot
+  - Commentary generation: $0.0016 per shot
+  - Voice (Grok TTS): $0.0008 per shot (~$0.08 total)
 
 ### Accuracy
 - Base accuracy: ~75-85% (zero-shot)
@@ -338,7 +336,7 @@ pytest --cov=src tests/  # With coverage
 
 1. **Windows-Specific** - pygetwindow requires Windows
 2. **GS Pro Required** - Designed for GS Pro simulator only
-3. **API Keys Required** - Both Anthropic and ElevenLabs needed
+3. **API Keys Required** - Both Anthropic and xAI (Grok TTS) needed
 4. **Internet Required** - API calls need connectivity
 
 ## Future Enhancements (Not Implemented)

@@ -4,14 +4,12 @@
 anthropic:
   api_key: ${ANTHROPIC_API_KEY}  # Set via environment variable or replace directly
 
-elevenlabs:
-  api_key: ${ELEVENLABS_API_KEY}  # Set via environment variable or replace directly
-  voice_id: "Antoni"  # Default neutral voice (options: Antoni, Rachel, etc.)
-  model: "eleven_turbo_v2_5"  # Turbo model (available on free tier)
-  stability: 0.5
-  similarity_boost: 0.75
+grok_tts:
+  api_key: ${XAI_API_KEY}  # Set via environment variable or replace directly
+  voice_id: "leo"           # Options: leo, rex, ara, eve, sal
+  model: "grok-tts-preview"
 
-personality: "neutral"  # Options: neutral, encouraging, sarcastic
+personality: "neutral"  # Options: neutral, encouraging, sarcastic, jerk, documentary, ex-girlfriend, unhinged
 commentary_frequency: 0.7  # Probability of generating commentary (0.0-1.0, 1.0 = always)
 name_frequency: 0.3  # Probability of including player name in commentary (0.0-1.0, 1.0 = always)
 
@@ -32,7 +30,7 @@ cache:
   persist_interval: 10        # Auto-save every N additions
 
 cost:
-  budget_per_round: 0.05      # USD - halt if approaching this limit
+  budget_per_round: 2.00      # USD - much lower now with Grok TTS (~$0.35/round)
   warn_at_percentage: 0.80    # Warn when 80% of budget used
 
 logging:

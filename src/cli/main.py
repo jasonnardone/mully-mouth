@@ -73,8 +73,8 @@ def main() -> int:
             print("Please set the environment variable or add it to config/config.yaml")
             return 1
 
-        if not config.elevenlabs.api_key:
-            print("\nError: ELEVENLABS_API_KEY not configured.")
+        if not config.voice.api_key:
+            print("\nError: XAI_API_KEY not configured.")
             print("Please set the environment variable or add it to config/config.yaml")
             return 1
 

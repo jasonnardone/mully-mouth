@@ -244,11 +244,9 @@ class Monitor:
 
         # Voice service
         self.voice_service = VoiceService(
-            api_key=self.config.elevenlabs.api_key,
-            voice_id=self.config.elevenlabs.voice_id,
-            model=self.config.elevenlabs.model,
-            stability=self.config.elevenlabs.stability,
-            similarity_boost=self.config.elevenlabs.similarity_boost,
+            api_key=self.config.voice.api_key,
+            voice_id=self.config.voice.voice_id,
+            model=self.config.voice.model,
             volume_boost=self.config.volume_boost,
         )
 

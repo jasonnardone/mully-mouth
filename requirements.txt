@@ -1,6 +1,7 @@
 # Core dependencies
 anthropic>=0.7.0
-elevenlabs>=0.2.0
+openai>=1.0.0
+pygame>=2.5.0
 opencv-python>=4.8.0
 mss>=9.0.0
 pygetwindow>=0.0.9
