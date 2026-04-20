@@ -174,7 +174,7 @@ set ELEVENLABS_API_KEY=your-key-here
 
 **System-wide (Windows Settings):**
 1. Search "Environment Variables" in Windows
-2. Add `ANTHROPIC_API_KEY` and `ELEVENLABS_API_KEY`
+2. Add `ANTHROPIC_API_KEY` and `XAI_API_KEY`
 3. Restart application
 
 ### Multiple Monitors
@@ -246,5 +246,11 @@ Once you're comfortable with the system tray interface:
 2. Experiment with different personalities (see data/personalities/)
 3. Fine-tune frequency settings to your preference
 4. Monitor your API costs and optimize as needed
+
+Happy golfing!
+imize as needed
+
+Happy golfing!
+ur API costs and optimize as needed
 
 Happy golfing!
