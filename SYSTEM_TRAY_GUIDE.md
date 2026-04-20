@@ -52,19 +52,20 @@ Choose from available commentary personalities:
 ### Adjust Settings
 
 #### Commentary Frequency
-How often commentary is generated:
-- **Always (100%)** - Comment on every shot
-- **Often (75%)** - Comment on most shots
-- **Sometimes (50%)** - Comment on half the shots
-- **Rarely (25%)** - Comment occasionally
+How often commentary is generated (Default: 30%):
+- **Balanced (50%)** - Comment on half the shots
+- **Active (40%)** - Frequent commentary
+- **Standard (30%)** - Recommended for cost control
+- **Quiet (20%)** - Occasional commentary
+- **Minimal (10%)** - Very rare commentary
 - **Never (0%)** - No commentary (silent)
 
 #### Name Frequency
 How often player name is mentioned in commentary:
 - **Always (100%)** - Include name in every comment
-- **Often (75%)** - Include name most of the time
-- **Sometimes (50%)** - Include name sometimes
-- **Rarely (25%)** - Include name occasionally
+- **Frequent (90-70%)** - Include name most of the time
+- **Sometimes (50%)** - Include name half the time
+- **Rarely (30-10%)** - Include name occasionally
 - **Never (0%)** - Never mention player name
 
 ### Session Stats
@@ -163,13 +164,13 @@ Set API keys via environment variables (recommended for security):
 **PowerShell:**
 ```powershell
 $env:ANTHROPIC_API_KEY="your-key-here"
-$env:ELEVENLABS_API_KEY="your-key-here"
+$env:XAI_API_KEY="your-key-here"
 ```
 
 **Command Prompt:**
 ```cmd
 set ANTHROPIC_API_KEY=your-key-here
-set ELEVENLABS_API_KEY=your-key-here
+set XAI_API_KEY=your-key-here
 ```
 
 **System-wide (Windows Settings):**
@@ -221,7 +222,7 @@ Both versions have the same functionality - pick whichever you prefer!
 
 2. **Check stats periodically** - Right-click icon → Session Stats to monitor costs and accuracy
 
-3. **Adjust frequency** - If commentary gets annoying, reduce commentary_frequency to 25% or 50%
+3. **Adjust frequency** - If commentary gets annoying or costs are too high, reduce commentary_frequency to 30% or lower.
 
 4. **Try personalities** - Experiment with different personalities to find your favorite
 
@@ -246,11 +247,5 @@ Once you're comfortable with the system tray interface:
 2. Experiment with different personalities (see data/personalities/)
 3. Fine-tune frequency settings to your preference
 4. Monitor your API costs and optimize as needed
-
-Happy golfing!
-imize as needed
-
-Happy golfing!
-ur API costs and optimize as needed
 
 Happy golfing!
