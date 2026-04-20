@@ -10,7 +10,7 @@ grok_tts:
   model: "grok-tts-preview"
 
 personality: "neutral"  # Options: neutral, encouraging, sarcastic, jerk, documentary, ex-girlfriend, unhinged
-commentary_frequency: 0.7  # Probability of generating commentary (0.0-1.0, 1.0 = always)
+commentary_frequency: 0.3  # Probability of generating commentary (0.0-1.0, 1.0 = always)
 name_frequency: 0.3  # Probability of including player name in commentary (0.0-1.0, 1.0 = always)
 
 monitoring:

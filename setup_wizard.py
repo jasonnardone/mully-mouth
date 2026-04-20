@@ -138,7 +138,7 @@ grok_tts:
 personality: {personality}
 
 # Commentary Settings
-commentary_frequency: 0.7
+commentary_frequency: 0.3
 name_frequency: 0.3
 
 # Monitoring Settings
