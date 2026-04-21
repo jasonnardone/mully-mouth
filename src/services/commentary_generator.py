@@ -148,8 +148,8 @@ class CommentaryGeneratorService:
                 prompt += f"PLAYER NAME: {player_name}\n"
                 prompt += f"\nInclude the player's name '{player_name}' naturally in the commentary."
 
-            prompt += "\nGenerate a concise (1-2 sentences), personality-appropriate, celebratory commentary that captures the excitement of this achievement."
-            prompt += "\n\nIMPORTANT: Do NOT censor or edit any profanity or swear words. Write them in full without asterisks (*) or other replacements. They need to be pronounced correctly by text-to-speech."
+            prompt += "\nGenerate a concise (1-2 sentences), personality-appropriate commentary that reacts to this achievement. Match the personality's typical tone and vocabulary, whether that's celebratory, sarcastic, or harsh."
+            prompt += "\n\nThis will be spoken aloud via text-to-speech, so write natural spoken commentary that fits the personality."
 
             # Call Claude API
             message = self.client.messages.create(
@@ -319,12 +319,12 @@ class CommentaryGeneratorService:
             for phrase in phrases[:3]:  # Limit to 3 examples
                 prompt += f"- {phrase}\n"
 
-        prompt += "\nGenerate a concise (1-2 sentences), personality-appropriate commentary."
+        prompt += "\nGenerate a concise (1-2 sentences), personality-appropriate commentary that matches the tone and style of the example phrases."
 
         if player_name:
             prompt += f"\nInclude the player's name '{player_name}' naturally in the commentary."
 
-        prompt += "\n\nIMPORTANT: Do NOT censor or edit any profanity or swear words. Write them in full without asterisks (*) or other replacements. They need to be pronounced correctly by text-to-speech."
+        prompt += "\n\nGenerate authentic commentary that will be spoken aloud via text-to-speech. Match the exact tone, vocabulary, and style shown in the examples above."
 
         return prompt
 

@@ -19,7 +19,7 @@ monitoring:
   ball_stop_duration: 1.0     # Seconds of stillness before shot complete
 
 ai:
-  model: "claude-sonnet-4-5"
+  model: "claude-haiku-4-5-20251001"
   max_tokens: 150
   temperature: 0.7
   target_image_size: [1280, 720]  # Resize before API call

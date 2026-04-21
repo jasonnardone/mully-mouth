@@ -12,7 +12,7 @@ class AnthropicConfig:
     """Anthropic API configuration."""
 
     api_key: str
-    model: str = "claude-sonnet-4-5"
+    model: str = "claude-haiku-4-5-20251001"
 
 
 @dataclass
@@ -58,7 +58,7 @@ class MonitoringConfig:
 class AIConfig:
     """AI model configuration."""
 
-    model: str = "claude-3-5-sonnet-20241022"
+    model: str = "claude-haiku-4-5-20251001"
     max_tokens: int = 150
     temperature: float = 0.7
     target_image_size: List[int] = None

@@ -37,7 +37,7 @@ def check_dependencies() -> bool:
 
     required_packages = [
         "anthropic",
-        "elevenlabs",
+        "openai",
         "cv2",
         "mss",
         "pygetwindow",

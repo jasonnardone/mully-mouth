@@ -125,7 +125,7 @@ def main() -> int:
 # Anthropic (Claude AI) Configuration
 anthropic:
   api_key: {anthropic_key}
-  model: claude-3-5-haiku-latest
+  model: claude-haiku-4-5-20251001
 
 # xAI Grok TTS (Voice) Configuration
 # Pricing: $4.20/1M characters (~$0.35/round at full settings)

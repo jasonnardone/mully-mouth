@@ -49,14 +49,14 @@ def main():
         print("\nError: Anthropic API key is required")
         sys.exit(1)
 
-    # Get ElevenLabs API key
+    # Get xAI API key
     print()
-    print("2. ElevenLabs API Key")
-    print("   Get yours at: https://elevenlabs.io/")
-    elevenlabs_key = getpass.getpass("   Enter key (hidden): ").strip()
+    print("2. xAI (Grok TTS) API Key")
+    print("   Get yours at: https://console.x.ai/")
+    xai_key = getpass.getpass("   Enter key (hidden): ").strip()
 
-    if not elevenlabs_key:
-        print("\nError: ElevenLabs API key is required")
+    if not xai_key:
+        print("\nError: xAI API key is required")
         sys.exit(1)
 
     # Store credentials
@@ -64,9 +64,9 @@ def main():
     print("Storing credentials securely...")
 
     success_anthropic = creds.store_anthropic_key(anthropic_key)
-    success_elevenlabs = creds.store_elevenlabs_key(elevenlabs_key)
+    success_xai = creds.store_xai_key(xai_key)
 
-    if success_anthropic and success_elevenlabs:
+    if success_anthropic and success_xai:
         print()
         print("✓ Credentials stored successfully!")
         print()

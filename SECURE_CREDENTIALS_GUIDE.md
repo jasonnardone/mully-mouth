@@ -19,7 +19,7 @@ Mully Mouth uses Windows Credential Manager to store your API keys:
 The application loads API keys in this priority order:
 
 1. **Securely stored credentials** (Windows Credential Manager) ⭐
-2. **Environment variables** (ANTHROPIC_API_KEY, ELEVENLABS_API_KEY)
+2. **Environment variables** (ANTHROPIC_API_KEY, XAI_API_KEY)
 3. **Config file** (config/config.yaml)
 
 ## Setup Instructions
@@ -194,7 +194,7 @@ from src.lib.credentials import CredentialsManager
 creds = CredentialsManager()
 print(f"Has credentials: {creds.has_credentials()}")
 print(f"Anthropic key: {'SET' if creds.get_anthropic_key() else 'NOT SET'}")
-print(f"ElevenLabs key: {'SET' if creds.get_elevenlabs_key() else 'NOT SET'}")
+print(f"xAI key: {'SET' if creds.get_xai_key() else 'NOT SET'}")
 ```
 
 ### Want to use config file instead
@@ -258,14 +258,14 @@ Credentials are stored with these identifiers:
 
 - **Service**: `MullyMouthGolfCaddy`
 - **Anthropic Key**: `anthropic_api_key`
-- **ElevenLabs Key**: `elevenlabs_api_key`
+- **xAI Key**: `xai_api_key`
 
 ### Code Reference
 
 See `src/lib/credentials.py` for the implementation:
 - `CredentialsManager` class
-- Storage: `store_anthropic_key()`, `store_elevenlabs_key()`
-- Retrieval: `get_anthropic_key()`, `get_elevenlabs_key()`
+- Storage: `store_anthropic_key()`, `store_xai_key()`
+- Retrieval: `get_anthropic_key()`, `get_xai_key()`
 - Management: `clear_all()`, `has_credentials()`
 
 See `src/lib/config.py` for priority loading:

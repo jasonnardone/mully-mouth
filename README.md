@@ -21,38 +21,32 @@ AI-powered golf shot narration for GS Pro simulator using Claude Vision and xAI 
 
 ### Prerequisites
 
-- Python 3.11 or higher
+- **Python 3.11, 3.12, or 3.13** (Python 3.12 recommended for best compatibility)
 - GS Pro golf simulator
-- Anthropic API key (Claude) — console.anthropic.com
-- xAI API key (Grok TTS) — console.x.ai
+- Anthropic API key (Claude) — [console.anthropic.com](https://console.anthropic.com/)
+- xAI API key (Grok TTS) — [console.x.ai](https://console.x.ai/)
 
 ### Installation
 
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/mully-mouth.git
-cd mully-mouth
-```
+**Simple 3-Step Install:**
 
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
+1. **Install Dependencies** - Double-click `install.bat`
+   - Automatically creates a virtual environment
+   - Installs all required packages
+   - Checks Python version compatibility
 
-3. Configure API keys:
+2. **Configure API Keys** - Double-click `setup_credentials.bat`
+   - Securely stores your Anthropic and xAI API keys
+   - Uses Windows Credential Manager (encrypted)
+   - Never saves keys in plain text files
 
-**Recommended: Setup Wizard**
-```bash
-python setup_wizard.py
-```
-The wizard will:
-- Guide you through entering your Anthropic and xAI API keys
-- Store them securely in Windows Credential Manager (encrypted by Windows)
-- Set up your configuration with sensible defaults
-- Never save API keys in plain text files
+3. **Run Application** - Double-click `mully-mouth.bat`
+   - Launches the system tray application
+   - Look for the gray "M" icon in your system tray
 
-**Alternative Methods:**
+**For detailed installation instructions, troubleshooting, and manual setup, see [INSTALL.md](INSTALL.md)**
 
+**Alternative Credential Methods:**
 - **Environment Variables**: Set `ANTHROPIC_API_KEY` and `XAI_API_KEY` in Windows System Environment Variables
 - **Config File**: Copy `config/config.yaml.template` to `config/config.yaml` and edit (not recommended for public repos)
 

@@ -133,16 +133,29 @@ class VoiceService:
         return (len(text) / 1_000_000) * 4.20
 
     def _generate_and_play(self, text: str) -> None:
-        response = self.client.audio.speech.create(
-            model=self.model,
-            voice=self.voice_id,
-            input=text,
+        # Use direct API call to xAI's TTS endpoint instead of OpenAI SDK
+        import httpx
+
+        response = httpx.post(
+            "https://api.x.ai/v1/tts",
+            headers={
+                "Authorization": f"Bearer {self.client.api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "text": text,
+                "voice_id": self.voice_id,
+                "language": "en"
+            },
+            timeout=30.0
         )
+        response.raise_for_status()
+        audio_bytes = response.content
 
         if PYGAME_AVAILABLE:
-            self._play_with_pygame(response.content)
+            self._play_with_pygame(audio_bytes)
         else:
-            self._play_with_tempfile(response.content)
+            self._play_with_tempfile(audio_bytes)
 
     def _play_with_pygame(self, audio_bytes: bytes) -> None:
         audio_io = io.BytesIO(audio_bytes)
@@ -232,9 +245,10 @@ class VoiceService:
             self.is_speaking = False
 
             error_str = str(e)
-            if "401" in error_str or "quota" in error_str.lower() or "insufficient_quota" in error_str:
-                print("  ⚠️  xAI API error - skipping voice synthesis")
-                print("  💡 Check your xAI API key at console.x.ai")
+            if "401" in error_str or "403" in error_str or "quota" in error_str.lower() or "insufficient_quota" in error_str or "not authorized" in error_str.lower():
+                print("  ⚠️  xAI TTS error - skipping voice synthesis")
+                print("  💡 Voice requires TTS access at console.x.ai")
+                print("  💡 Check if your plan includes Grok TTS or request beta access")
                 return
 
             raise VoiceServiceError(f"Failed to generate TTS audio: {e}")

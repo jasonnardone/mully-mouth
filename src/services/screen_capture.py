@@ -227,4 +227,8 @@ class ScreenCaptureService:
         """Cleanup on deletion."""
         self.stop_monitoring()
         if hasattr(self, "sct"):
-            self.sct.close()
+            try:
+                self.sct.close()
+            except (AttributeError, Exception):
+                # Ignore errors during cleanup - thread-local object may be gone
+                pass
