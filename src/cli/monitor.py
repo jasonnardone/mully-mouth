@@ -19,6 +19,7 @@ from src.services.learning_service import LearningService
 from src.services.motion_detector import MotionDetectorService
 from src.services.pattern_cache import PatternCacheService
 from src.services.screen_capture import ScreenCaptureService
+from src.services.screen_classifier import ScreenClassifier
 from src.services.session_service import SessionService
 from src.services.voice_service import VoiceService
 
@@ -259,6 +260,15 @@ class Monitor:
         # Session service
         self.session_service = SessionService(sessions_dir="data/sessions")
 
+        # Screen classifier — pre-flight check before motion detection
+        self.screen_classifier = ScreenClassifier(
+            training_dir="data/training/images"
+        )
+        if self.screen_classifier.has_training_data:
+            print("Screen classifier loaded (pre-flight idle detection active).")
+        else:
+            print("Screen classifier: no training data found, running without pre-filter.")
+
     def _monitoring_loop(self) -> None:
         """
         Main monitoring loop.
@@ -271,6 +281,13 @@ class Monitor:
                 frame = self.screen_capture.get_latest_frame()
 
                 if frame is None:
+                    time.sleep(0.1)
+                    continue
+
+                # Pre-flight: skip motion detection entirely when the screen
+                # doesn't look like an active golf course (menu, desktop, etc.)
+                if not self.screen_classifier.is_gameplay_screen(frame):
+                    self.motion_detector.reset()
                     time.sleep(0.1)
                     continue
 
