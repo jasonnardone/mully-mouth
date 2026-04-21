@@ -11,7 +11,7 @@ import yaml
 class AnthropicConfig:
     """Anthropic API configuration."""
 
-    api_key: str
+    api_key: str = ""
     model: str = "claude-haiku-4-5-20251001"
 
 

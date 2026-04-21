@@ -16,7 +16,20 @@
       "Bash(git checkout:*)",
       "Bash(git add:*)",
       "Bash(mkdir:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(ls:*)",
+      "Bash(pip install:*)",
+      "Bash(./mully-mouth.bat)",
+      "Bash(./install.bat)",
+      "Bash(./venv/Scripts/activate.bat)",
+      "Bash(./venv/Scripts/python.exe:*)",
+      "Bash(grep:*)",
+      "WebSearch",
+      "WebFetch(domain:docs.x.ai)",
+      "Bash(find:*)",
+      "Bash(git push)",
+      "Bash(git reset:*)",
+      "Bash(git check-ignore *)"
     ],
     "deny": [],
     "ask": []

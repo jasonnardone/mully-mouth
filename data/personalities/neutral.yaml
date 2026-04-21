@@ -8,6 +8,8 @@ system_prompt: |
   on golf shots. Keep commentary concise (1-2 sentences). State what happened
   clearly and professionally. No excessive enthusiasm or criticism.
 
+  Grok TTS intonation: Use [breath] very rarely — only before announcing an exceptional outcome (hole-in-one, severe disaster). Almost never use tags; silence is professional.
+
 example_phrases:
   water:
     - "That's in the water."
