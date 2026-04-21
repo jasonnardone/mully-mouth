@@ -2,146 +2,198 @@
 
 **Feature Branch**: `001-golf-narration`
 **Created**: 2025-11-19
-**Status**: Draft
+**Last Updated**: 2026-04-21
+**Status**: Implemented & Active
 **Input**: User description: "Build an application that can narrate a round of golf in GS pro."
+
+---
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Basic Shot Commentary (Priority: P1)
+### User Story 1 - Basic Shot Commentary (Priority: P1) ✅ COMPLETE
 
 As a golfer playing GS Pro, I want to hear natural commentary on my shots so that I can get real-time feedback on my performance without looking away from the game.
 
-**Why this priority**: This is the core value proposition - automated shot detection and commentary. Without this, the application has no purpose. This delivers immediate value even without any training or customization.
-
-**Independent Test**: Can be fully tested by launching GS Pro, playing 3-5 shots, and verifying that the system automatically detects each shot and provides spoken commentary describing where the ball landed (fairway, water, bunker, green, etc.).
-
 **Acceptance Scenarios**:
 
-1. **Given** GS Pro is running and the narration app is active, **When** I hit a shot that lands in the fairway, **Then** I hear commentary like "Nice fairway shot" within 2 seconds of the ball stopping
-2. **Given** GS Pro is running and the narration app is active, **When** I hit a shot into a water hazard, **Then** I hear commentary acknowledging the water shot (e.g., "That's in the water")
-3. **Given** GS Pro is running and the narration app is active, **When** I hit a shot into a bunker, **Then** I hear commentary identifying the bunker
-4. **Given** GS Pro is running and the narration app is active, **When** I hit a shot onto the green, **Then** I hear commentary acknowledging the good shot
-5. **Given** I complete a full 18-hole round, **When** reviewing my experience, **Then** the system provided commentary on at least 90% of my shots
+1. **Given** GS Pro is running and the narration app is active, **When** I hit a shot that lands in the fairway, **Then** I hear commentary within 2 seconds of the ball stopping
+2. **Given** GS Pro is running, **When** I hit into water, bunker, rough, trees, green, or OB, **Then** I hear commentary identifying the outcome
+3. **Given** I complete a full 18-hole round, **Then** the system provided commentary on at least 90% of shots
 
 ---
 
-### User Story 2 - Personality Selection (Priority: P2)
+### User Story 2 - Personality Selection (Priority: P2) ✅ COMPLETE
 
-As a golfer, I want to choose between different commentator personalities (encouraging, neutral, sarcastic) so that the commentary matches my mood and makes the game more entertaining.
-
-**Why this priority**: While basic commentary is essential, personality makes the experience engaging and fun. This significantly increases entertainment value and user retention, but the app is still useful without it.
-
-**Independent Test**: Can be tested by selecting each personality type during setup, playing 5 shots, and verifying that the commentary tone and style matches the selected personality (encouraging gives positive reinforcement, sarcastic makes humorous jabs, neutral stays professional).
+As a golfer, I want to choose between different commentator personalities so that the commentary matches my mood and makes the game more entertaining.
 
 **Acceptance Scenarios**:
 
-1. **Given** I'm in the initial setup, **When** I'm prompted to choose a commentator personality, **Then** I see at least 3 distinct options (encouraging, neutral, sarcastic) with clear descriptions
-2. **Given** I've selected the "encouraging" personality, **When** I hit a poor shot, **Then** the commentary remains positive and supportive
-3. **Given** I've selected the "sarcastic" personality, **When** I hit a poor shot, **Then** the commentary includes humorous, light-hearted ribbing
-4. **Given** I've selected the "neutral" personality, **When** I hit any shot, **Then** the commentary remains objective and professional
-5. **Given** I want to change personalities, **When** I access the settings, **Then** I can switch to a different personality without restarting the application
+1. **Given** I'm in setup, **When** choosing a personality, **Then** I see 7 distinct options: Neutral, Sarcastic, Encouraging, Jerk, Sir David (documentary), Ex-Girlfriend, and Unhinged
+2. **Given** I've selected any personality, **When** I hit shots, **Then** commentary tone, vocabulary, and voice consistently match the selected character
+3. **Given** I want to change personality, **When** I right-click the system tray icon, **Then** I can switch personality without restarting
+4. **Given** profane personalities (Jerk, Unhinged) are selected, **Then** commentary uses explicit language and stays in character
+5. **Given** any personality is selected, **Then** commentary is 50-80 characters ideally, never exceeding 150 characters
 
 ---
 
-### User Story 3 - Training by Examples (Priority: P3)
+### User Story 3 - Training by Examples (Priority: P3) ✅ COMPLETE
 
-As a golfer, I want to teach the system to recognize specific shot outcomes from my simulator by showing it a few example screenshots, so that it becomes more accurate for my specific GS Pro setup and courses.
-
-**Why this priority**: Zero-shot recognition works well, but custom training improves accuracy for specific simulator configurations, lighting conditions, and course visual styles. This is valuable but not essential for initial use.
-
-**Independent Test**: Can be tested by entering training mode, uploading 3-5 screenshots of water shots with descriptions, playing a round, and verifying that water shots are recognized with higher confidence/accuracy than before training.
+As a golfer, I want to teach the system to recognize specific shot outcomes from my simulator by showing it example screenshots, so that it becomes more accurate for my specific setup.
 
 **Acceptance Scenarios**:
 
-1. **Given** I'm in training mode, **When** I upload a screenshot and label it as "water shot", **Then** the system confirms it has learned this example
-2. **Given** I've provided 3 examples of a specific shot outcome, **When** I exit training mode, **Then** the system indicates it's ready to recognize this pattern
-3. **Given** I've trained the system on water shots, **When** I hit a water shot during gameplay, **Then** the recognition confidence is higher than before training
-4. **Given** the system makes an incorrect call during gameplay, **When** I provide a correction (e.g., press a hotkey and say "that was actually rough, not bunker"), **Then** the system learns from this correction
-5. **Given** I've been playing for several rounds, **When** I review the system's accuracy, **Then** I notice improvement in recognition accuracy over time
+1. **Given** I place screenshots in `data/training/images/<outcome>/`, **Then** the system uses them as few-shot examples in AI analysis calls
+2. **Given** I've trained on a shot type, **When** a similar shot occurs, **Then** recognition confidence is higher than without training
+3. **Given** the AI makes an incorrect call, **When** I make a correction via the tray menu, **Then** the system learns from it
+4. **Given** training images exist in the `idle/` folder, **Then** the screen pre-classifier uses them to suppress non-gameplay frames before motion detection fires
 
 ---
 
-### User Story 4 - Quick Setup (Priority: P4)
+### User Story 4 - Quick Setup (Priority: P4) ✅ COMPLETE
 
-As a first-time user, I want to complete the entire setup process in under 10 minutes with minimal technical knowledge, so that I can start enjoying commentary on my golf round quickly.
-
-**Why this priority**: Setup speed and simplicity are critical for adoption, but this is more about optimizing the onboarding experience rather than core functionality. Users who are technically savvy can get started quickly even without a guided setup.
-
-**Independent Test**: Can be tested by timing a new user from initial launch through first shot commentary, verifying the entire process takes less than 10 minutes and requires no technical configuration.
+As a first-time user, I want to complete setup in under 10 minutes with no command-line steps, so I can start using the app immediately.
 
 **Acceptance Scenarios**:
 
-1. **Given** I've just installed the application, **When** I launch it for the first time, **Then** I'm greeted with a simple welcome screen explaining what the app does in 1-2 sentences
-2. **Given** I'm in the setup wizard, **When** following the prompts, **Then** I only need to provide my voice service API key and select a personality
-3. **Given** I'm completing setup, **When** the system needs to detect GS Pro, **Then** it automatically finds the GS Pro window without me specifying screen regions or coordinates
-4. **Given** I've completed basic setup, **When** I click "Start", **Then** the system is ready to narrate my round within 10 minutes of first launch
-5. **Given** I need help during setup, **When** I encounter any step, **Then** simple, plain-language instructions guide me without technical jargon
+1. **Given** I've just installed the app, **When** I run `install.bat`, **Then** all dependencies are installed automatically with no manual steps
+2. **Given** I run `setup_wizard.py`, **When** I enter my Anthropic and xAI API keys, **Then** they are stored securely in Windows Credential Manager — not in any file
+3. **Given** I launch `mully-mouth.bat`, **Then** the app starts as a system tray icon with no visible terminal window
+4. **Given** I right-click the tray icon, **Then** I can change personality, adjust commentary frequency, and start/stop monitoring from the menu
+5. **Given** setup is complete, **When** I return on another day, **Then** my API keys and settings are remembered without re-entry
+
+---
+
+### User Story 5 - Achievement & Score Commentary (Priority: P2) ✅ COMPLETE
+
+As a golfer, I want to hear special commentary when I score a birdie, eagle, par, or bogey, so that scoring achievements feel rewarding and entertaining.
+
+**Acceptance Scenarios**:
+
+1. **Given** I sink a putt for birdie, **When** the Birdie overlay appears on screen, **Then** I hear personality-appropriate achievement commentary
+2. **Given** I make an eagle or hole-in-one, **Then** the commentary is more enthusiastic/dramatic than for a birdie
+3. **Given** an achievement overlay is detected, **Then** achievement commentary plays instead of (or before) the shot outcome commentary
+
+---
+
+### User Story 6 - Player Name Personalization (Priority: P3) ✅ COMPLETE
+
+As a golfer, I want the commentator to occasionally use my name so that commentary feels more personal.
+
+**Acceptance Scenarios**:
+
+1. **Given** my name appears in the GS Pro HUD, **When** commentary is generated, **Then** it occasionally includes my first name
+2. **Given** the name frequency setting is 30% (default), **Then** approximately 30% of commentary lines reference my name
+3. **Given** name frequency is set to 0%, **Then** the commentator never uses my name
+
+---
+
+### User Story 7 - Non-Gameplay Screen Suppression (Priority: P2) ✅ COMPLETE
+
+As a golfer, I want the app to stay completely silent when I'm in menus, setting up a round, or the GSPro window isn't active, so I don't hear commentary triggered by UI activity.
+
+**Acceptance Scenarios**:
+
+1. **Given** the app is running but GSPro is on a menu or setup screen, **Then** no commentary or API calls fire
+2. **Given** I'm testing the app with no golf course visible, **Then** the monitor stays in idle state
+3. **Given** I navigate from a menu back into active gameplay, **Then** commentary resumes automatically without restarting
+4. **Given** training images exist in `data/training/images/idle/`, **Then** the screen classifier uses them to distinguish menus from gameplay
 
 ---
 
 ### Edge Cases
 
-- What happens when GS Pro is minimized or not visible on screen?
-- How does the system handle very fast shot sequences (e.g., practice swings or quick mulligans)?
-- What happens when the ball lands in an unusual location not well-represented in training (e.g., cart path, rocks, unusual terrain)?
-- How does the system handle partial occlusion of the game window by other applications?
-- What happens if shot detection misses a shot entirely?
-- How does the system behave when the user pauses mid-round or switches courses?
-- What happens if the commentary is still speaking when the next shot is hit?
-- How does the system handle shots that are still in motion when another event occurs?
+- What happens when GS Pro is minimized or not visible on screen? → Screen classifier suppresses all activity
+- How does the system handle very fast shot sequences? → Motion detector requires 1 second of stillness before triggering
+- What if the commentary is still speaking when the next shot is hit? → New speech interrupts or queues
+- What happens if API keys are missing or invalid? → Tray icon shows warning; app continues running silently
+- What if screen capture returns a non-gameplay screen? → Pre-flight classifier suppresses it without an API call
+- What if the commentary would violate AI safety guidelines? → Prompt engineering avoids refusals; profane personalities have been tested
+
+---
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: System MUST automatically detect when a shot has been completed in GS Pro by monitoring screen activity
+**Core Commentary**
+- **FR-001**: System MUST automatically detect when a shot has been completed by monitoring screen motion using OpenCV frame differencing
 - **FR-002**: System MUST analyze the shot outcome within 2 seconds of the ball stopping
-- **FR-003**: System MUST identify common shot outcomes including: fairway, green, water hazard, bunker, rough, trees, and out of bounds
-- **FR-004**: System MUST generate natural language commentary appropriate to the identified shot outcome
-- **FR-005**: System MUST deliver commentary via text-to-speech within 2 seconds of shot completion
-- **FR-006**: System MUST support at least three distinct commentator personalities with noticeably different tones
-- **FR-007**: System MUST operate continuously throughout an 18-hole round without user intervention
-- **FR-008**: System MUST allow users to provide corrections when shot identification is incorrect
-- **FR-009**: System MUST improve accuracy by learning from user corrections over time
-- **FR-010**: System MUST provide a training mode where users can upload example screenshots with labels
-- **FR-011**: System MUST operate with zero training examples (zero-shot capability) with at least 60% accuracy
-- **FR-012**: System MUST automatically detect the GS Pro window without requiring manual screen region configuration
-- **FR-013**: System MUST support toggling commentary on/off via hotkey during gameplay
-- **FR-014**: System MUST persist user preferences (personality choice, training examples) between sessions
-- **FR-015**: System MUST complete the initial setup process in under 10 minutes for new users
-- **FR-016**: System MUST cost less than $0.05 per 18-hole round in AI API usage
-- **FR-017**: System MUST provide clear feedback when it cannot detect GS Pro or when detection confidence is low
+- **FR-003**: System MUST identify shot outcomes: fairway, green, water hazard, bunker, rough, trees, out of bounds, tee shot, unknown
+- **FR-004**: System MUST generate natural language commentary appropriate to the identified outcome
+- **FR-005**: System MUST deliver commentary via Grok TTS (xAI) within 2 seconds of shot completion
+- **FR-006**: Commentary MUST be 50-80 characters ideally; NEVER exceed 150 characters
+- **FR-007**: System MUST detect and provide special commentary for score achievements (Birdie, Eagle, Par, Bogey, Hole-in-One, etc.)
+
+**Personality System**
+- **FR-008**: System MUST support 7 distinct commentator personalities: Neutral, Sarcastic, Encouraging, Jerk, Sir David (documentary), Ex-Girlfriend, Unhinged
+- **FR-009**: Each personality MUST use a specific Grok TTS voice: leo (Neutral/Documentary), rex (Jerk), ara (Encouraging), eve (Sarcastic/Ex-Girlfriend), sal (Unhinged)
+- **FR-010**: Personality prompts MUST use Grok TTS inline expression tags sparingly and contextually: `[laugh]`, `[chuckle]`, `[sigh]`, `[tsk]`, `[breath]`, `<whisper>`, `<loud>`, `<slow>`, `<emphasis>`, `<soft>`
+- **FR-011**: Commentary frequency MUST be user-configurable (default 20%); only this percentage of shots trigger commentary
+- **FR-012**: Player name usage frequency MUST be separately configurable (default 30%)
+
+**Screen Classification**
+- **FR-013**: System MUST run a pre-flight screen classifier on every frame before engaging motion detection
+- **FR-014**: The classifier MUST use color histogram comparison against training images (zero API calls)
+- **FR-015**: If the screen does not resemble an active golf course, the motion detector MUST be reset and the frame skipped
+- **FR-016**: The classifier MUST fail-open (assume gameplay) if no training images are present
+
+**API Cost Management**
+- **FR-017**: System MUST combine idle detection, player name extraction, achievement detection, and shot outcome analysis into a SINGLE Claude API call per shot
+- **FR-018**: System MUST check the pattern cache BEFORE making any API call; cache hits skip all AI analysis
+- **FR-019**: Motion detection MUST use vertical-motion filtering to distinguish real shots from aiming adjustments
+- **FR-020**: System MUST use claude-haiku for all shot analysis (NOT claude-sonnet or claude-opus)
+- **FR-021**: Target API cost per round: under $0.05 analysis + ~$0.35 TTS = under $0.40 total
+
+**Windows Distribution**
+- **FR-022**: System MUST run as a Windows system tray application with no visible terminal during use
+- **FR-023**: API keys MUST be stored in Windows Credential Manager via `keyring`; they MUST NOT appear in any config file
+- **FR-024**: System MUST provide a one-click installer (`install.bat`) that sets up all dependencies automatically
+- **FR-025**: System MUST prevent multiple concurrent instances
+- **FR-026**: System MUST support multi-monitor setups with selectable capture monitor
+
+**Learning**
+- **FR-027**: System MUST operate with zero training examples (zero-shot) with at least 60% accuracy
+- **FR-028**: System MUST improve accuracy from user corrections stored in `data/training/`
+- **FR-029**: Pattern cache MUST persist between sessions to reduce repeat API calls
+
+---
 
 ### Key Entities
 
-- **Shot Event**: Represents a detected golf shot with attributes including timestamp, screenshot at completion, detected outcome type, confidence level, and generated commentary
-- **Training Example**: Represents a user-provided screenshot labeled with the correct shot outcome type, used to improve recognition accuracy
-- **User Correction**: Represents feedback when the system misidentified a shot, including the incorrect prediction and the correct outcome, used for active learning
-- **Commentary Personality**: Represents a configurable style of narration with attributes including name, description, tone characteristics, and example phrases
-- **Session**: Represents a single round of golf with attributes including start time, total shots detected, accuracy metrics, and API usage
+- **Shot Event**: timestamp, screenshot, detected outcome, confidence, generated commentary, API cost, was_cached flag, achievement detected
+- **Training Example**: screenshot hash, outcome label, reasoning, confidence, source (user/auto)
+- **User Correction**: original outcome, corrected outcome, user notes, timestamp
+- **Commentary Personality**: name, voice_id, system_prompt (with TTS tag guidance), example_phrases per outcome type
+- **Session**: start/end time, shots detected, total API calls, total cost, cache hit rate, accuracy rate
+- **Screen Classifier**: gameplay histogram, idle histogram, calibration bias (built from training images at startup)
+
+---
 
 ## Success Criteria *(mandatory)*
 
 ### Measurable Outcomes
 
-- **SC-001**: Users can complete initial setup and hear their first shot narrated in under 10 minutes from installation
-- **SC-002**: System detects and narrates at least 90% of shots during a typical 18-hole round without user intervention
-- **SC-003**: Shot outcome identification accuracy starts at 60% with zero training and improves to 80% after one round
-- **SC-004**: Commentary is delivered within 2 seconds of the ball stopping for 95% of shots
-- **SC-005**: Cost per 18-hole round remains under $0.05 in AI API usage
-- **SC-006**: Users can distinguish between the three personality types after hearing 5 shots from each
-- **SC-007**: Users who provide 5+ training examples see measurable accuracy improvement within the same session
-- **SC-008**: 90% of users successfully complete setup without needing external help or documentation
-- **SC-009**: System operates for a full 18-hole round (approximately 2 hours) without errors or crashes
-- **SC-010**: Users report that commentary enhances their golf simulation experience in post-round feedback
+- **SC-001**: Users complete initial setup and hear first shot narrated in under 10 minutes from running `install.bat`
+- **SC-002**: System detects and narrates at least 90% of shots during a typical 18-hole round
+- **SC-003**: Shot outcome identification accuracy starts at 60% with zero training; improves with corrections
+- **SC-004**: Commentary delivered within 2 seconds of ball stopping for 95% of shots
+- **SC-005**: Total cost per 18-hole round under $0.40 (AI analysis + TTS)
+- **SC-006**: All 7 personalities are distinctly recognizable in tone, vocabulary, and voice within 5 shots
+- **SC-007**: No API calls fired while the screen shows menus, setup screens, or non-GSPro content
+- **SC-008**: Zero API keys stored in plain text files on disk
+- **SC-009**: System tray app runs for a full 4-hour session without errors or crashes
+- **SC-010**: Commentary length stays under 150 characters 100% of the time
+
+---
 
 ### Assumptions
 
-- Users have a Windows PC running GS Pro golf simulator software
-- Users have a valid API key for Claude Vision (Anthropic) for shot analysis
-- Users have a valid API key for a text-to-speech service (ElevenLabs, Google, or Azure)
-- GS Pro displays the game in a window or full screen that can be captured
-- Users play at a normal pace with at least 3-5 seconds between shots
-- Users are comfortable with basic software installation (similar to installing a game or utility)
+- Users have a Windows 10/11 gaming PC running GS Pro golf simulator
+- Users have a valid Anthropic API key (for Claude Haiku shot analysis)
+- Users have a valid xAI API key (for Grok TTS voice synthesis, $4.20/1M characters)
+- GS Pro is displayed fullscreen on a selectable monitor
+- Users play at a normal pace with at least 1-2 seconds between shots
+- No ffmpeg or other system-level media dependencies are available on the target PC
+- Git is available on the system for auto-update functionality
+- Users are non-technical (no manual config file editing, no terminal use during normal operation)
 - Internet connectivity is available during gameplay for API calls
-- Standard GS Pro visual presentation (typical colors, UI layout) is used

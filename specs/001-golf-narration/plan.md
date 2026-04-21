@@ -1,305 +1,264 @@
 # Implementation Plan: AI Voice Caddy for GS Pro
 
-**Branch**: `001-golf-narration` | **Date**: 2025-11-19 | **Spec**: [spec.md](spec.md)
-**Input**: Feature specification from `specs/001-golf-narration/spec.md`
-
-**Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
+**Branch**: `001-golf-narration` | **Created**: 2025-11-19 | **Last Updated**: 2026-04-21
+**Spec**: [spec.md](spec.md)
 
 ## Summary
 
-Build an AI-first voice caddy for GS Pro golf simulator that automatically detects shots, analyzes outcomes using Claude Vision, and provides personality-driven commentary via text-to-speech. The system uses zero-shot learning with optional few-shot training, operates continuously during gameplay, and learns from user corrections. Core requirements: <2 second response time, 90% shot detection, <$0.05 per round, 60% initial accuracy improving to 80%+ after one round.
+Real-time golf commentary system for GS Pro simulator. Captures the screen, detects shots via motion analysis, classifies the outcome in a single Claude Haiku API call, and delivers personality-driven voice commentary via Grok TTS. Runs as a Windows system tray application targeting non-technical users on gaming PCs.
+
+**Current Status**: Fully implemented and operational. This document reflects the as-built architecture.
+
+---
 
 ## Technical Context
 
 **Language/Version**: Python 3.11+
-**Primary Dependencies**:
-- Anthropic Python SDK (Claude Vision API)
-- ElevenLabs Python SDK (text-to-speech)
-- OpenCV (cv2) for screen capture and motion detection
-- PyAutoGUI or MSS for cross-platform screen capture
-- Pynput for hotkey handling
-- YAML for configuration (pyyaml)
 
-**Storage**: Local filesystem (JSON/YAML for user preferences, training examples, pattern cache)
-**Testing**: pytest for unit tests, integration tests, and cost validation
-**Target Platform**: Windows 10/11 (primary), potential Linux/Mac support
-**Project Type**: Single desktop application with CLI interface
-**Performance Goals**:
-- Shot detection latency: <500ms from ball stop
-- AI analysis + TTS: <2 seconds total
-- Screen capture: 1-2 fps during monitoring, adequate for motion detection
-- Memory footprint: <200MB during operation
+**Primary Dependencies** (as-built):
+| Package | Purpose |
+|---|---|
+| `anthropic` | Claude Haiku Vision API (shot analysis) |
+| `openai` | xAI Grok TTS (OpenAI-compatible client pointing to `api.x.ai`) |
+| `httpx` | Direct POST to xAI `/v1/tts` endpoint |
+| `pygame` | Audio playback of TTS MP3 output |
+| `opencv-python` (cv2) | Motion detection, frame differencing, histogram comparison |
+| `mss` | Fast screen capture |
+| `pygetwindow` | Window detection |
+| `pystray` | Windows system tray icon and menu |
+| `keyring` | Windows Credential Manager API key storage |
+| `pyyaml` | Personality and config file parsing |
+| `imagehash` (PIL) | Perceptual hashing for pattern cache |
+| `Pillow` | Image encoding and resizing |
+| `numpy` | Frame array operations |
+| `pytest` | Test suite |
 
-**Constraints**:
-- API costs: <$0.05 per 18-hole round (~80 shots)
-- Maximum 20 API calls per round through intelligent caching
-- Must operate for 2+ hours continuously without degradation
-- Zero manual screen region configuration
-- Offline capability for cached patterns (online required for new analysis)
+**Removed Dependencies** (migrated away from):
+- `elevenlabs` — replaced by xAI Grok TTS (94% cost reduction)
+- `pyaudio` — replaced by pygame for audio playback
 
-**Scale/Scope**:
-- Single-user desktop application
-- ~2,000-3,000 lines of Python code
-- Support for 10+ shot outcome types
-- 3 personality profiles
-- Pattern cache of 50-100 learned examples per user
+**Storage**: Local filesystem
+- `config/config.yaml` — non-secret settings (personality, frequency, model, monitoring params)
+- Windows Credential Manager — API keys (never in files)
+- `data/personalities/*.yaml` — personality definitions
+- `data/training/images/<outcome>/` — training screenshots per outcome type
+- `data/cache/pattern_cache.json` — perceptual hash cache
+- `data/sessions/*.json` — session history
+
+**Target Platform**: Windows 10/11 (gaming PC, non-technical user)
+**Primary UI**: Windows system tray icon (no terminal visible during normal use)
+**Testing**: pytest for unit and integration tests
+
+---
+
+## Architecture
+
+### Pipeline
+
+```
+Screen Capture (MSS, 2 FPS)
+    │
+    ▼
+Screen Classifier (OpenCV histogram vs training images) ──► IDLE → reset motion detector, skip
+    │ GAMEPLAY
+    ▼
+Motion Detector (OpenCV frame diff, vertical-motion filter)
+    │ Motion detected → ball stopped (1s stillness)
+    ▼
+Pattern Cache (perceptual hash lookup)
+    │ CACHE HIT → use cached outcome, skip AI
+    │ CACHE MISS
+    ▼
+Claude Haiku (SINGLE unified API call)
+    ├── is_idle: bool
+    ├── player_name: str | null
+    ├── achievement: str | null  (BIRDIE, EAGLE, PAR, etc.)
+    ├── outcome: fairway/green/water/bunker/rough/trees/ob/tee_shot/unknown
+    └── confidence: float
+    │
+    ▼
+Commentary Decision (rolls against commentary_frequency %)
+    │ Triggered
+    ▼
+Commentary Generator (Claude Haiku + personality YAML)
+    │
+    ▼
+Grok TTS (xAI /v1/tts → MP3 → pygame playback)
+```
+
+### Key Design Decisions
+
+**Unified API call**: All per-shot analysis (idle check, player name, achievement, outcome) combined into one Claude Haiku call returning JSON. Reduces from 4-5 calls to 1-2 per shot, cutting costs 80-90%.
+
+**Pre-flight screen classifier**: Runs entirely in OpenCV using HSV histogram correlation against training images. Fires on every frame at ~1ms cost, zero API calls. Prevents motion detection from arming when the screen is a menu, setup screen, or unrelated application.
+
+**Cache before AI**: Pattern cache is checked before any AI call. Cache hits are free — no API cost at all for repeat shot types.
+
+**Commentary frequency**: Only a configurable percentage (default 20%) of detected shots trigger commentary generation. The other shots are analyzed but silent.
+
+**Commentary length constraint**: All personality prompts instruct the AI to keep commentary under 80 characters (hard limit: 150). Short commentary = lower Grok TTS cost.
+
+---
+
+## Project Structure (as-built)
+
+```
+src/
+  services/
+    screen_capture.py       # MSS screen capture, monitor selection
+    motion_detector.py      # OpenCV frame diff, vertical-motion filter
+    screen_classifier.py    # Pre-flight HSV histogram classifier (NEW)
+    ai_analyzer.py          # Claude Haiku unified analysis
+    pattern_cache.py        # Perceptual hash cache
+    commentary_generator.py # Personality-driven commentary generation
+    voice_service.py        # Grok TTS via xAI API + pygame playback
+    learning_service.py     # Few-shot examples, user corrections
+    session_service.py      # Session persistence
+  models/
+    outcome.py              # Outcome enum
+    shot_event.py           # Shot event dataclass
+    session.py              # Session dataclass
+    correction.py           # User correction dataclass
+  cli/
+    tray_app.py             # System tray icon and menu (PRIMARY ENTRY POINT)
+    monitor.py              # Core monitoring orchestrator
+    main.py                 # CLI entry point (secondary)
+  lib/
+    config.py               # Config loading (keyring → env → yaml priority)
+    credentials.py          # Windows Credential Manager via keyring
+    exceptions.py           # Service-specific exceptions
+    utils.py                # UUID, timestamps, file I/O
+
+config/
+  config.yaml               # Non-secret settings (no API keys)
+  config.yaml.template      # Template for fresh installs
+
+data/
+  personalities/            # 7 YAML personality definitions
+    neutral.yaml
+    sarcastic.yaml
+    encouraging.yaml
+    jerk.yaml
+    documentary.yaml        # Sir David Attenborough style
+    ex-girlfriend.yaml
+    unhinged.yaml
+  training/
+    images/
+      fairway/              # Training screenshots per outcome
+      green/
+      bunker/
+      rough/
+      trees/
+      out_of_bounds/
+      water/
+      idle/                 # Menu/setup screens for screen classifier
+    few_shot_examples.json
+  cache/
+    pattern_cache.json
+  sessions/
+    *.json
+
+install.bat                 # One-click dependency installer
+mully-mouth.bat             # Launcher (uses venv, no terminal visible)
+setup_wizard.py             # First-run API key setup (stores to Credential Manager)
+setup_credentials.bat       # Credential update wrapper
+```
+
+---
+
+## Personality System (as-built)
+
+| Personality | Voice | Character |
+|---|---|---|
+| Neutral | leo | Professional broadcaster |
+| Sarcastic | eve | Witty, light ribbing |
+| Encouraging | ara | Warm, supportive |
+| Jerk | rex | Profane, trash-talking |
+| Sir David (documentary) | leo | Nature documentary narrator |
+| Ex-Girlfriend | eve | Unhinged, possessive ex |
+| Unhinged | sal | Psychotic conspiracy theorist |
+
+**Grok TTS expression tags** (used sparingly, mapped in system prompts):
+- Inline: `[laugh]` `[chuckle]` `[sigh]` `[tsk]` `[breath]` `[exhale]`
+- Wrapping: `<whisper>` `<loud>` `<slow>` `<emphasis>` `<soft>`
+
+Each personality file specifies which tags to use and when (e.g., documentary uses `<whisper>` every ~3 phrases; jerk uses `[laugh]` only on spectacular failures).
+
+---
+
+## Cost Model (as-built)
+
+| Component | Cost |
+|---|---|
+| Claude Haiku analysis (per shot, cache miss) | ~$0.0003 |
+| Claude Haiku commentary (per triggered shot) | ~$0.0002 |
+| Grok TTS (per commentary, ~70 chars avg) | ~$0.0003 |
+| **Per round (80 shots, 20% freq, 70% cache hit)** | **~$0.10–0.40** |
+
+Previous cost (ElevenLabs + Claude Sonnet, 4 calls/shot): ~$6–7/round. Current architecture is ~94% cheaper.
+
+---
+
+## API Key Priority Order
+
+`load_config()` resolves API keys in this order:
+1. Windows Credential Manager (via `keyring`) — always preferred
+2. Environment variables (`ANTHROPIC_API_KEY`, `XAI_API_KEY`)
+3. Config file fallback (for dev only; keys should never be committed)
+
+---
+
+## Screen Classifier Calibration
+
+The `ScreenClassifier` builds averaged HSV hue/saturation histograms from all images in `data/training/images/` at startup. The gameplay vs idle decision uses:
+
+```
+is_gameplay = gameplay_correlation > idle_correlation + 0.15
+```
+
+The 0.15 bias was calibrated against the training set:
+- Minimum gameplay gap: 0.206 (all 19 gameplay training images pass)
+- Maximum idle gap: 0.090 (all 6 idle training images block)
+
+Adding more training images in any category automatically improves the classifier on next restart — no code changes needed.
+
+---
 
 ## Constitution Check
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+### I. AI-First Development ✅
 
-### I. AI-First Development ✅ PASS
+- Shot outcome detection: Claude Haiku Vision (not rule-based)
+- Commentary generation: Claude Haiku with personality prompts
+- Motion detection and screen classification: OpenCV (appropriate — cheap, deterministic, not AI-suitable tasks)
 
-**Compliance**:
-- Shot outcome detection delegated to Claude Vision (zero-shot, few-shot)
-- Commentary generation handled by AI understanding context
-- Pattern learning through AI, not rule-based matching
-- Motion detection uses traditional OpenCV (appropriate: cheap, deterministic, not AI-suitable)
+### II. Natural Interaction Over Configuration ✅
 
-**Validation**: AI handles all complex pattern recognition and decision-making. Traditional methods only for cheap, repetitive operations (screen capture, motion detection).
+- API keys: entered once in GUI wizard, stored in Credential Manager
+- Personality: selected from tray menu, no config file editing
+- Training: drop screenshots into folders, restart classifier
+- No pixel coordinates, thresholds, or technical flags exposed to users
 
-### II. Natural Interaction Over Configuration ✅ PASS
+### III. Learning-Driven Systems ✅
 
-**Compliance**:
-- Training via screenshot upload + natural language labels
-- User corrections via hotkey + conversational input ("that was rough, not bunker")
-- Configuration limited to API keys and personality selection
-- Zero screen region or pixel coordinate configuration
-- No behavior flags or technical parameters exposed
+- Zero-shot capability maintained (60%+ accuracy without training)
+- Pattern cache grows from real gameplay
+- Few-shot examples from `data/training/` improve AI accuracy
+- User corrections via tray menu feed back into the learning pipeline
 
-**Validation**: Users interact through examples and corrections, not configuration files.
+### IV. Cost-Conscious Intelligence ✅
 
-### III. Learning-Driven Systems ✅ PASS
+- Pre-flight classifier gates every frame in ~1ms (zero API cost)
+- Motion detection filters 99%+ of frames before any analysis
+- Pattern cache skips AI entirely on repeat shots
+- Unified API call: 4 analysis tasks → 1 call
+- Haiku model (20x cheaper than Sonnet) used for all automated tasks
+- Commentary frequency default 20% reduces TTS costs further
 
-**Compliance**:
-- Zero-shot capability required (60% accuracy without training)
-- Active learning from user corrections during gameplay
-- Pattern cache grows from actual usage
-- Confidence tracking triggers user confirmation when uncertain
-- Progressive accuracy improvement measured and visible
+### V. Simplicity & User Experience ✅
 
-**Validation**: System works immediately, improves through use, learns from real gameplay.
-
-### IV. Cost-Conscious Intelligence ✅ PASS
-
-**Compliance**:
-- OpenCV motion detection filters 99% of frames (cheap)
-- AI calls only on shot completion events
-- Pattern cache reduces redundant AI analysis
-- Confidence-based caching: high-confidence outcomes skip AI
-- Target: <20 API calls per round, <$0.05 cost
-
-**Validation**: Hybrid architecture with intelligent triggering meets cost targets.
-
-### V. Simplicity & User Experience ✅ PASS
-
-**Compliance**:
-- Setup target: <10 minutes (SC-001)
-- Training: 3-5 examples sufficient (few-shot)
-- Error messages conversational, actionable
-- Zero technical knowledge required
-- Progress visible (accuracy improvement over rounds)
-
-**Validation**: All UX requirements align with simplicity principle.
-
-### Technical Standards ✅ PASS
-
-**API Integration**:
-- ✅ Claude Vision for image understanding
-- ✅ ElevenLabs for text-to-speech (as specified)
-- ✅ OpenCV for screen capture and motion detection
-
-**Performance & Cost Targets**:
-- ✅ Setup time: <10 minutes target
-- ✅ API calls: <20 per session target
-- ✅ Cost: <$0.05 per session target
-- ✅ Accuracy: 60% → 80% → 90% progression
-- ✅ Response latency: <2 seconds target
-
-**Code Architecture**:
-- ✅ Python-first (specified by user)
-- ✅ Library-first design (importable modules)
-- ✅ CLI interface for user interaction
-- ✅ Minimal dependencies (AI SDK, screen capture, TTS)
-- ✅ Clear separation: motion detection → AI analysis → TTS output
-
-### Gate Decision: ✅ **PASSED - Proceed to Phase 0**
-
-All constitutional principles satisfied. No violations requiring justification. Design fully aligns with AI-first, natural interaction, learning-driven, cost-conscious, and simple UX principles.
-
-## Project Structure
-
-### Documentation (this feature)
-
-```text
-specs/[###-feature]/
-├── plan.md              # This file (/speckit.plan command output)
-├── research.md          # Phase 0 output (/speckit.plan command)
-├── data-model.md        # Phase 1 output (/speckit.plan command)
-├── quickstart.md        # Phase 1 output (/speckit.plan command)
-├── contracts/           # Phase 1 output (/speckit.plan command)
-└── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
-```
-
-### Source Code (repository root)
-
-```text
-src/
-├── models/
-│   ├── shot_event.py          # Shot Event entity
-│   ├── training_example.py    # Training Example entity
-│   ├── correction.py           # User Correction entity
-│   ├── personality.py          # Commentary Personality entity
-│   └── session.py              # Session entity
-├── services/
-│   ├── screen_capture.py       # Window detection, screen capture
-│   ├── motion_detector.py      # OpenCV-based motion/shot detection
-│   ├── ai_analyzer.py          # Claude Vision integration
-│   ├── pattern_cache.py        # Pattern matching and caching
-│   ├── commentary_generator.py # Personality-based commentary
-│   ├── voice_service.py        # ElevenLabs TTS integration
-│   └── learning_service.py     # Active learning, corrections
-├── cli/
-│   ├── main.py                 # CLI entry point
-│   ├── setup.py                # Setup wizard
-│   ├── train.py                # Training mode
-│   └── monitor.py              # Gameplay monitoring
-└── lib/
-    ├── config.py               # Configuration management
-    ├── hotkeys.py              # Hotkey handling
-    └── utils.py                # Shared utilities
-
-tests/
-├── integration/
-│   ├── test_shot_detection.py
-│   ├── test_ai_analysis.py
-│   ├── test_learning.py
-│   └── test_cost.py            # API cost validation
-└── unit/
-    ├── test_motion_detector.py
-    ├── test_pattern_cache.py
-    └── test_commentary.py
-
-config/
-└── config.yaml                 # User configuration (API keys, preferences)
-
-data/
-├── personalities/              # Personality definitions
-│   ├── encouraging.yaml
-│   ├── neutral.yaml
-│   └── sarcastic.yaml
-├── training/                   # User training examples
-└── cache/                      # Pattern cache
-```
-
-**Structure Decision**: Single project structure chosen. This is a desktop application with no frontend/backend split. All code is Python, organized into models (entities), services (business logic), CLI (user interface), and lib (utilities). Testing focuses on integration (end-to-end flows, cost validation) and unit (individual components).
-
-## Complexity Tracking
-
-> **Fill ONLY if Constitution Check has violations that must be justified**
-
-No violations. All design decisions align with constitutional principles.
-
-## Phase 0: Research Complete
-
-**Artifacts Generated**:
-- `research.md`: Technology decisions, best practices, implementation strategies
-- All NEEDS CLARIFICATION items resolved
-
-**Key Decisions**:
-- Screen Capture: MSS library (fast, cross-platform)
-- Motion Detection: OpenCV frame differencing
-- Pattern Cache: Perceptual hashing (imagehash)
-- AI: Claude 3.5 Sonnet via Anthropic SDK
-- TTS: ElevenLabs streaming
-- Configuration: YAML with pydantic validation
-- Testing: pytest with cost tracking fixtures
-
-## Phase 1: Design Complete
-
-**Artifacts Generated**:
-- `data-model.md`: Entity definitions and relationships
-- `contracts/service-interfaces.md`: Service contracts and interfaces
-- `quickstart.md`: Developer setup and testing guide
-- `CLAUDE.md`: Agent context updated with technology stack
-
-**Architecture Summary**:
-- 5 core entities: ShotEvent, TrainingExample, UserCorrection, CommentaryPersonality, Session
-- 7 service interfaces: ScreenCapture, MotionDetector, AIAnalyzer, PatternCache, CommentaryGenerator, Voice, Learning
-- Single project structure: `src/{models,services,cli,lib}`, `tests/{unit,integration}`
-- Data storage: Local JSON/YAML files
-- API integrations: Anthropic (Claude Vision), ElevenLabs (TTS)
-
-## Constitution Re-Check (Post-Design)
-
-Re-evaluated after completing detailed design:
-
-### I. AI-First Development ✅ PASS
-
-**Design Validation**:
-- Service interfaces delegate to AI: `IAIAnalyzerService.analyze_shot()`
-- Pattern cache uses AI-generated outcomes, not rules
-- Commentary generation uses AI with personality prompts
-- Motion detection appropriately uses traditional OpenCV (cheap, deterministic)
-- No rule-based shot classification
-
-**Compliance**: Full AI-first design maintained.
-
-### II. Natural Interaction Over Configuration ✅ PASS
-
-**Design Validation**:
-- Training via `ILearningService.create_training_example()` (screenshot + label)
-- Corrections via `ILearningService.record_correction()` (conversational)
-- Configuration in `config.yaml`: only API keys + personality name
-- No screen region coordinates, thresholds, or flags exposed
-- Personality defined in human-readable YAML
-
-**Compliance**: Natural interaction design confirmed.
-
-### III. Learning-Driven Systems ✅ PASS
-
-**Design Validation**:
-- Zero-shot: `analyze_shot()` works without training examples
-- Few-shot: `few_shot_examples` parameter in `analyze_shot()`
-- Active learning: `ILearningService` handles corrections → training
-- Confidence tracking: `find_match()` returns confidence scores
-- Progressive improvement: Session entity tracks accuracy over time
-
-**Compliance**: Learning-driven architecture validated.
-
-### IV. Cost-Conscious Intelligence ✅ PASS
-
-**Design Validation**:
-- Motion detection: OpenCV (free), filters frames before AI
-- Pattern cache: `IPatternCacheService.find_match()` reduces AI calls
-- Confidence-based caching: >0.85 confidence skips AI
-- Cost tracking: `get_total_cost()` in AI service
-- Image optimization: Resize to 1280x720 before API call
-
-**Compliance**: Cost optimization baked into design.
-
-### V. Simplicity & User Experience ✅ PASS
-
-**Design Validation**:
-- Setup wizard: `cli/setup.py` (API keys + personality only)
-- Quick training: `cli/train.py` (upload + label)
-- Automatic operation: `cli/main.py` (no intervention during play)
-- Error messages: Service exceptions with user-friendly text
-- Progress visible: Session entity exposes stats
-
-**Compliance**: Simple UX design confirmed.
-
-### Technical Standards ✅ PASS
-
-**Design Validation**:
-- APIs: Anthropic SDK, ElevenLabs SDK (as specified)
-- Performance: Service contracts specify <2s total latency
-- Cost: Cost tracking in services, session-level totals
-- Architecture: Library-first (importable services), CLI interface
-- Separation: Motion → AI → TTS pipeline clear in service contracts
-
-**Compliance**: All technical standards met in design.
-
-### Gate Decision: ✅ **PASSED - Ready for Implementation**
-
-Design remains fully compliant with all constitutional principles. Service contracts enforce AI-first, natural interaction, learning-driven, cost-conscious, and simple UX requirements. No violations introduced during detailed design phase.
+- One-click install (install.bat)
+- No terminal visible during normal use
+- System tray is the only UI surface
+- Setup wizard handles all first-run configuration
+- Non-technical target audience: Windows gaming PC users
