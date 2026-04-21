@@ -307,47 +307,29 @@ class Monitor:
             input_tokens = usage.get('input_tokens', 0)
             output_tokens = usage.get('output_tokens', 0)
 
-            # Claude Sonnet 4.5 pricing (as of Nov 2024):
-            # Input: $3.00 / 1M tokens
-            # Output: $15.00 / 1M tokens
-            # Cache reads: $0.30 / 1M tokens (90% discount)
-            # Cache writes: $3.75 / 1M tokens (25% surcharge)
+            # Claude Haiku 4.5 pricing (current):
+            # Input: $0.25 / 1M tokens
+            # Output: $1.25 / 1M tokens
+            # Cache reads: $0.025 / 1M tokens (90% discount)
+            # Cache writes: $0.3125 / 1M tokens (25% surcharge)
 
             cache_read_tokens = usage.get('cache_read_input_tokens', 0)
             cache_creation_tokens = usage.get('cache_creation_input_tokens', 0)
 
             # Calculate costs
             regular_input = input_tokens - cache_read_tokens - cache_creation_tokens
-            input_cost = (regular_input / 1_000_000) * 3.00
-            cache_read_cost = (cache_read_tokens / 1_000_000) * 0.30
-            cache_write_cost = (cache_creation_tokens / 1_000_000) * 3.75
-            output_cost = (output_tokens / 1_000_000) * 15.00
+            input_cost = (regular_input / 1_000_000) * 0.25
+            cache_read_cost = (cache_read_tokens / 1_000_000) * 0.025
+            cache_write_cost = (cache_creation_tokens / 1_000_000) * 0.3125
+            output_cost = (output_tokens / 1_000_000) * 1.25
 
             total_cost = input_cost + cache_read_cost + cache_write_cost + output_cost
             return total_cost
 
         except Exception as e:
             # Fallback to rough estimate if usage data unavailable
-            return 0.005  # ~$0.005 per request as fallback
+            return 0.001  # ~$0.001 per request as fallback (Haiku is cheap!)
 
-    def _extract_player_name(self, screenshot: np.ndarray) -> Optional[str]:
-        """
-        Extract player name from upper left corner of screenshot using Claude Vision API.
-
-        Args:
-            screenshot: Full screenshot
-
-        Returns:
-            Player name if found, None otherwise
-        """
-        try:
-            # Use AI analyzer to extract player name
-            player_name = self.ai_analyzer.extract_player_name(screenshot)
-            return player_name
-
-        except Exception as e:
-            # Name extraction failed, continue without name
-            return None
 
     def _process_shot(self, screenshot: np.ndarray) -> None:
         """
@@ -362,21 +344,61 @@ class Monitor:
 
             print(f"\n[{timestamp.strftime('%H:%M:%S')}] Shot detected!")
 
-            # Check if this is an idle/non-gameplay screen first
-            is_idle = self.ai_analyzer.detect_idle_screen(screenshot)
-            if is_idle:
-                print("  Idle screen detected (menu/setup/complete) - skipping analysis to save costs")
-                return
+            # Check pattern cache first (before any AI calls)
+            cached_result = self.pattern_cache.find_match(screenshot)
 
-            # Extract player name from screenshot every time (if name_frequency > 0)
-            player_name = None
-            if self.config.name_frequency > 0:
-                player_name = self._extract_player_name(screenshot)
+            if cached_result:
+                # Cache hit - skip AI analysis entirely
+                outcome, confidence = cached_result
+                was_cached = True
+                api_cost = 0.0
+                player_name = None
+                achievement = None
+                print(f"  Outcome: {outcome.value} (cached, confidence: {confidence:.2f})")
+            else:
+                # Cache miss - use unified AI analysis (1 API call instead of 4!)
+                # Get few-shot examples from learning service
+                few_shot_examples = self.learning_service.get_few_shot_examples(limit=3)
+
+                # UNIFIED ANALYSIS: idle detection + player name + achievement + shot outcome in ONE call
+                print("  Analyzing with AI...")
+                analysis = self.ai_analyzer.analyze_shot_unified(
+                    screenshot,
+                    extract_player_name=(self.config.name_frequency > 0),
+                    check_achievements=True,
+                    few_shot_examples=few_shot_examples
+                )
+
+                # Extract results from unified analysis
+                is_idle = analysis['is_idle']
+                player_name = analysis['player_name']
+                achievement = analysis['achievement']
+                outcome = analysis['outcome']
+                confidence = analysis['confidence']
+                raw_response = analysis['raw_response']
+
+                # Calculate actual cost from API response
+                api_cost = self._calculate_api_cost(raw_response)
+                was_cached = False
+
+                # Check if idle screen - skip if so
+                if is_idle:
+                    print("  Idle screen detected (menu/setup/complete) - skipping")
+                    return
+
+                # Print results
                 if player_name:
                     print(f"  Player: {player_name}")
 
-            # Check for score achievement first (Birdie, Eagle, etc.)
-            achievement = self.ai_analyzer.detect_score_achievement(screenshot)
+                print(f"  Outcome: {outcome.value} (confidence: {confidence:.2f})")
+                if api_cost > 0:
+                    print(f"  API cost: ${api_cost:.4f}")
+
+                # Add to cache if high confidence
+                if confidence >= self.config.cache.min_confidence_to_cache:
+                    self.pattern_cache.add_pattern(screenshot, outcome, confidence)
+
+            # Handle achievement commentary (if present)
             if achievement:
                 print(f"  Achievement detected: {achievement}!")
 
@@ -415,36 +437,6 @@ class Monitor:
                 # For achievements, we skip the normal shot analysis
                 # and don't save to session since it's a screen overlay, not a shot
                 return
-
-            # Check pattern cache first
-            cached_result = self.pattern_cache.find_match(screenshot)
-
-            if cached_result:
-                outcome, confidence = cached_result
-                was_cached = True
-                api_cost = 0.0
-                print(f"  Outcome: {outcome.value} (cached, confidence: {confidence:.2f})")
-            else:
-                # Get few-shot examples from learning service
-                few_shot_examples = self.learning_service.get_few_shot_examples(limit=3)
-
-                # Call AI analyzer
-                print("  Analyzing with AI...")
-                outcome, confidence, raw_response = self.ai_analyzer.analyze_shot(
-                    screenshot, few_shot_examples=few_shot_examples
-                )
-                was_cached = False
-
-                # Calculate actual cost from API response
-                api_cost = self._calculate_api_cost(raw_response)
-
-                print(f"  Outcome: {outcome.value} (confidence: {confidence:.2f})")
-                if api_cost > 0:
-                    print(f"  API cost: ${api_cost:.4f}")
-
-                # Add to cache if high confidence
-                if confidence >= self.config.cache.min_confidence_to_cache:
-                    self.pattern_cache.add_pattern(screenshot, outcome, confidence)
 
             # Generate commentary based on frequency setting
             should_comment = random.random() < self.config.commentary_frequency

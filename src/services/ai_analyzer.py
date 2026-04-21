@@ -31,6 +31,148 @@ class AIAnalyzerService:
         self.model = model
         self.system_prompt = self._build_system_prompt()
 
+    def analyze_shot_unified(
+        self,
+        screenshot: np.ndarray,
+        extract_player_name: bool = False,
+        check_achievements: bool = True,
+        few_shot_examples: Optional[list] = None,
+    ) -> dict:
+        """
+        Unified shot analysis that does idle detection, player name extraction,
+        achievement detection, and shot outcome analysis in a SINGLE API call.
+
+        This dramatically reduces costs by combining 4 separate API calls into 1.
+
+        Args:
+            screenshot: Screenshot as RGB numpy array
+            extract_player_name: Whether to extract player name (default: False)
+            check_achievements: Whether to check for achievements (default: True)
+            few_shot_examples: Optional list of few-shot examples for context
+
+        Returns:
+            Dictionary with:
+                - is_idle: bool (true if menu/setup screen)
+                - player_name: str | None
+                - achievement: str | None
+                - outcome: Outcome
+                - confidence: float
+                - raw_response: dict
+
+        Raises:
+            AIServiceError: If API call fails or response invalid
+        """
+        try:
+            # Convert screenshot to base64
+            image_data = self._encode_image(screenshot)
+
+            # Build unified prompt
+            prompt = "Analyze this golf simulator screenshot and return JSON with the following information:\n\n"
+
+            prompt += "1. is_idle: Is this a NON-GAMEPLAY screen (menu, setup, round complete, leaderboard, etc.)? Return true or false.\n\n"
+
+            if extract_player_name:
+                prompt += "2. player_name: Extract the player name shown in the upper left corner. Return null if not found or unclear.\n\n"
+            else:
+                prompt += "2. player_name: Set to null (not needed).\n\n"
+
+            if check_achievements:
+                prompt += "3. achievement: Is there a score achievement overlay in the center (BIRDIE, EAGLE, PAR, BOGEY, etc.)? Return the achievement text in ALL CAPS, or null if none.\n\n"
+            else:
+                prompt += "3. achievement: Set to null (not needed).\n\n"
+
+            prompt += "4. outcome: What is the shot outcome? Possible values: fairway, green, water, bunker, rough, trees, out_of_bounds, tee_shot, unknown\n\n"
+            prompt += "5. confidence: Your confidence in the outcome analysis (0.0 to 1.0)\n\n"
+
+            if few_shot_examples:
+                prompt += "Reference examples:\n"
+                for i, example in enumerate(few_shot_examples[:3]):
+                    prompt += f"  Example {i+1}: {example.get('outcome', 'unknown')}\n"
+                prompt += "\n"
+
+            prompt += 'Return ONLY valid JSON in this exact format:\n'
+            prompt += '{\n'
+            prompt += '  "is_idle": false,\n'
+            prompt += '  "player_name": "John" or null,\n'
+            prompt += '  "achievement": "BIRDIE" or null,\n'
+            prompt += '  "outcome": "fairway",\n'
+            prompt += '  "confidence": 0.85\n'
+            prompt += '}'
+
+            # Call Claude Vision API
+            message = self.client.messages.create(
+                model=self.model,
+                max_tokens=200,  # Reduced from 1024 since we only need JSON
+                system=[
+                    {
+                        "type": "text",
+                        "text": "You are a golf simulator screenshot analyzer. Return ONLY valid JSON as requested.",
+                        "cache_control": {"type": "ephemeral"}
+                    }
+                ],
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "image",
+                                "source": {
+                                    "type": "base64",
+                                    "media_type": "image/jpeg",
+                                    "data": image_data,
+                                },
+                            },
+                            {
+                                "type": "text",
+                                "text": prompt,
+                            },
+                        ],
+                    }
+                ],
+            )
+
+            # Parse JSON response
+            import json
+            response_text = message.content[0].text.strip()
+            # Remove markdown code blocks if present
+            if response_text.startswith('```'):
+                response_text = response_text.split('\n', 1)[1]
+                response_text = response_text.rsplit('```', 1)[0]
+
+            result = json.loads(response_text)
+
+            # Convert outcome string to Outcome enum
+            outcome_str = result.get('outcome', 'unknown').lower()
+            try:
+                outcome = Outcome(outcome_str)
+            except ValueError:
+                outcome = Outcome.UNKNOWN
+
+            # Build response dict
+            return {
+                'is_idle': result.get('is_idle', False),
+                'player_name': result.get('player_name'),
+                'achievement': result.get('achievement'),
+                'outcome': outcome,
+                'confidence': float(result.get('confidence', 0.0)),
+                'raw_response': {
+                    "id": message.id,
+                    "model": message.model,
+                    "usage": {
+                        "input_tokens": message.usage.input_tokens,
+                        "output_tokens": message.usage.output_tokens,
+                        "cache_read_input_tokens": getattr(message.usage, 'cache_read_input_tokens', 0),
+                        "cache_creation_input_tokens": getattr(message.usage, 'cache_creation_input_tokens', 0),
+                    },
+                    "content": response_text,
+                }
+            }
+
+        except anthropic.APIError as e:
+            raise AIServiceError(f"Anthropic API error: {e}")
+        except Exception as e:
+            raise AIServiceError(f"Failed to analyze shot: {e}")
+
     def analyze_shot(
         self,
         screenshot: np.ndarray,
